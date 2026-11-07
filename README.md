@@ -272,11 +272,11 @@ Calendar scheduling is local to the device (and local iPhone notifications):
 
 Paste a Google OAuth **Web Client ID** into
 [`server/web/google-calendar-config.js`](server/web/google-calendar-config.js) to enable
-Connect. While the consent screen is in **Testing**, also add your Gmail under
-**Test users** or Google returns `403 access_denied` (“has not completed the Google
-verification process”). Until Connect works, AUTO stays wardrobe-only. Saving a plan
-still schedules local reminders (30 minutes before and at the planned time) on iPhone.
-Calendar plan cards include **EDIT** and **DELETE**.
+Connect. Also enable **Google Calendar API** on that Cloud project, and while the
+consent screen is in **Testing**, add your Gmail under **Test users**. Otherwise
+Google returns `403` (API disabled or access denied). Until Calendar works, AUTO
+falls back to a short wardrobe-only message (no raw JSON). Saving a plan still
+schedules local reminders on iPhone. Plan cards include **EDIT** and **DELETE**.
 
 Pre-wash RFID checks and bedroom return resets are implemented in the open app.
 Wash/dry timer notifications stay separate from calendar reminders. Scan processing

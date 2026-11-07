@@ -377,7 +377,7 @@
     if (page === 'Scanner') paintScanner();
     updateEnrollment();
   });
-  import('./schedule-auto.js?v=2').catch(() => {
+  import('./schedule-auto.js?v=3').catch(() => {
     console.warn('AUTO Google Calendar scheduling module failed to load; wardrobe-only HTML helpers remain.');
   });
 })();

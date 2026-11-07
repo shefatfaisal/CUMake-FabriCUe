@@ -25,9 +25,12 @@ function autoPanelHtml(d) {
   const p = d.prediction || {};
   const connected = isGoogleCalendarConnected();
   const configured = isGoogleCalendarConfigured();
-  const heading = p.calendar
-    ? (p.slotFound === false ? 'NO FREE SLOT FOUND' : (p.days === 0 ? 'LAUNDRY TODAY' : fmt(p.date)))
-    : (p.days === 0 ? 'LAUNDRY TODAY' : `IN ${p.days} DAY${p.days === 1 ? '' : 'S'}`);
+  const emptyWardrobe = /add everyday tops and bottoms/i.test(p.reason || '');
+  const heading = emptyWardrobe
+    ? 'ADD CLOTHING FIRST'
+    : p.calendar
+      ? (p.slotFound === false ? 'NO FREE SLOT FOUND' : (p.days === 0 ? 'LAUNDRY TODAY' : fmt(p.date)))
+      : (p.days === 0 ? 'LAUNDRY TODAY' : `IN ${p.days} DAY${p.days === 1 ? '' : 'S'}`);
   const status = connected
     ? '<p class="sub">Connected to Google Calendar. Suggestions use your busy schedule plus wardrobe wear.</p>'
     : '<p class="sub">Not connected. Suggestion uses how worn your clothes are. Connect Google Calendar to also pick a free day and time from your classes and plans.</p>';
@@ -88,16 +91,25 @@ useAutoSchedule = async function() {
     bumpScheduleIfPast(scheduleDraft);
     paintSchedule();
   } catch (error) {
+    const clean = shortError(error);
     scheduleDraft.prediction = predictionFromStats(stats);
-    scheduleDraft.prediction.reason = (error?.message || 'Calendar suggestion failed.') + ' Showing wardrobe-only estimate instead.';
+    scheduleDraft.prediction.reason = `${clean} Showing a wardrobe-only estimate instead.`;
     scheduleDraft.date = scheduleDraft.prediction.date;
     scheduleDraft.time = scheduleDraft.prediction.time || '18:00';
     scheduleMonth = dt(scheduleDraft.date);
     bumpScheduleIfPast(scheduleDraft);
     paintSchedule();
-    toast(error?.message || 'Could not use Google Calendar.');
+    toast(clean);
   }
 };
+
+function shortError(error) {
+  const raw = String(error?.message || error || 'Calendar suggestion failed.');
+  if (raw.length > 220 || raw.trim().startsWith('{')) {
+    return 'Google Calendar could not be read. Enable the Calendar API and add your Gmail as a Test user, then try again.';
+  }
+  return raw;
+}
 
 window.connectGoogleCalendarUI = async function() {
   if (!isGoogleCalendarConfigured()) {

@@ -100,15 +100,18 @@ For photo testing, use a physical iPhone; Simulator camera support is limited.
 
 ### Google Calendar Client ID (optional)
 
-1. In Google Cloud, create an OAuth **Web** client and enable the Calendar API.
-2. Add authorized JavaScript origins for `http://localhost:8000`, your Hosting URL,
+1. In Google Cloud, create an OAuth **Web** client.
+2. Enable **Google Calendar API** for the same project
+   (APIs & Services → Library → Google Calendar API → Enable). If this is off,
+   Connect works but AUTO shows a permission error.
+3. Add authorized JavaScript origins for `http://localhost:8000`, your Hosting URL,
    and `capacitor://localhost` for the installed app.
-3. Paste the client ID into `server/web/google-calendar-config.js` as `GOOGLE_CLIENT_ID`.
-4. While the OAuth consent screen Publishing status is **Testing**, open
+4. Paste the client ID into `server/web/google-calendar-config.js` as `GOOGLE_CLIENT_ID`.
+5. While the OAuth consent screen Publishing status is **Testing**, open
    **Audience → Test users** and add every Gmail that should connect (for example
    `faisalshefat@gmail.com`). Without that, Google shows
    `Error 403: access_denied` / “has not completed the Google verification process”.
-5. Rebuild/sync the iOS app (`npm run ios:sync`) after changing the client ID file.
+6. Rebuild/sync the iOS app (`npm run ios:sync`) after changing the client ID file.
 
 Native reminders can be delivered while the app is backgrounded, but **RFID
 processing and successful handshake replies still need the app active**. Local

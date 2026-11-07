@@ -120,7 +120,7 @@ export async function listBusyRange({timeMin, timeMax}) {
   }
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(text || 'Could not read Google Calendar busy times.');
+    throw new Error(explainGoogleApiError(response.status, text));
   }
   const data = await response.json();
   const busy = data.calendars?.primary?.busy || [];
@@ -128,6 +128,24 @@ export async function listBusyRange({timeMin, timeMax}) {
     start: new Date(block.start).getTime(),
     end: new Date(block.end).getTime()
   })).filter(block => Number.isFinite(block.start) && Number.isFinite(block.end));
+}
+
+function explainGoogleApiError(status, body) {
+  let parsed = null;
+  try { parsed = JSON.parse(body); } catch { /* plain text */ }
+  const message = parsed?.error?.message || '';
+  const reason = parsed?.error?.errors?.[0]?.reason || parsed?.error?.status || '';
+  const blob = `${message} ${reason} ${body || ''}`.toLowerCase();
+  if (blob.includes('accessnotconfigured') || blob.includes('service_disabled') || blob.includes('has not been used') || blob.includes('is disabled')) {
+    return 'Google Calendar API is not enabled for this Cloud project. In Google Cloud, enable “Google Calendar API”, wait a minute, then tap Refresh from Calendar.';
+  }
+  if (blob.includes('access_denied') || blob.includes('verification')) {
+    return 'Google blocked Calendar access. Add your Gmail as an OAuth Test user, then connect again.';
+  }
+  if (status === 403) return 'Google Calendar permission was denied. Check Calendar API is enabled and your account is a Test user.';
+  if (status === 429) return 'Google Calendar rate limit hit. Wait a moment and try again.';
+  if (message && message.length < 180) return message;
+  return 'Could not read Google Calendar busy times. Check Calendar API setup and try again.';
 }
 
 export async function suggestFromGoogleCalendar(stats, now = Date.now()) {
