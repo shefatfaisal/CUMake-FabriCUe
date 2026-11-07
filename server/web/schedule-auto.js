@@ -48,7 +48,8 @@ function autoPanelHtml(d) {
 paintSchedule = function() {
   if (!scheduleDraft) return;
   const d = scheduleDraft;
-  topModal('PLAN YOUR WASH',
+  const editing = Number.isInteger(d.editIndex);
+  topModal(editing ? 'EDIT LAUNDRY PLAN' : 'PLAN YOUR WASH',
     `<div class="chips">
       <button class="chip ${!d.auto ? 'active' : ''}" onclick="scheduleDraft.auto=false;paintSchedule()">MANUAL</button>
       <button class="chip ${d.auto ? 'active' : ''}" onclick="useAutoSchedule()">AUTO SUGGESTION</button>
@@ -62,7 +63,7 @@ paintSchedule = function() {
     ${schedulePicker === 'time' ? timePickerHtml() : ''}
     <label for="schedule-title">Title</label>
     <input id="schedule-title" maxlength="60" value="${esc(d.label)}" oninput="scheduleDraft.label=this.value">
-    <button type="button" class="btn primary" style="width:100%" onclick="savePlan()">SAVE PLAN ➜</button>`
+    <button type="button" class="btn primary" style="width:100%" onclick="savePlan()">${editing ? 'SAVE CHANGES ➜' : 'SAVE PLAN ➜'}</button>`
   );
 };
 

@@ -63,17 +63,28 @@ async function ensureAccessToken({interactive}) {
       scope: GOOGLE_CALENDAR_SCOPE,
       callback: response => {
         if (response.error) {
-          reject(new Error(response.error_description || response.error));
+          reject(new Error(explainGoogleAuthError(response.error, response.error_description)));
           return;
         }
         const expiresAt = Date.now() + (Number(response.expires_in) || 3600) * 1000;
         writeStored({accessToken: response.access_token, expiresAt});
         resolve(response.access_token);
       },
-      error_callback: err => reject(new Error(err?.message || 'Google Calendar sign-in was cancelled.'))
+      error_callback: err => reject(new Error(explainGoogleAuthError(err?.type || err?.message, err?.message)))
     });
     client.requestAccessToken({prompt: interactive ? 'consent' : ''});
   });
+}
+
+function explainGoogleAuthError(code, detail) {
+  const text = `${code || ''} ${detail || ''}`.toLowerCase();
+  if (text.includes('access_denied') || text.includes('verification') || text.includes('not completed')) {
+    return 'Google blocked sign-in because SmartLaundry is still in Testing. In Google Cloud → OAuth consent screen, add your Gmail under Test users, then try Connect again.';
+  }
+  if (text.includes('popup') || text.includes('closed')) {
+    return 'Google sign-in was cancelled. Open Connect again and finish the Google prompt.';
+  }
+  return detail || code || 'Could not connect Google Calendar.';
 }
 
 export async function connectGoogleCalendar() {
