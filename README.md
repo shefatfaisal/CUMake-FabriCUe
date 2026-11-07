@@ -1,274 +1,272 @@
-# FabriCUe — Smart Laundry Solution for Dorm Students
+# LightLink — Smart Laundry hackathon demo
 
-Connected clothing tracker and laundry manager for dorm life. RFID tags on clothes, a doorway reader, and a mobile app work together so students know what they’ve worn, what needs washing, when laundry fits their schedule, and whether anything is missing from a load.
-
-## Problem
-
-Dorm students juggle classes, work, shared laundry rooms, and messy clothing habits. It’s easy to:
-
-- Lose track of which clothes have been worn
-- Wait until almost nothing clean is left
-- Forget items in the room when heading to laundry
-- Leave clean clothes behind in the laundry room
-- Accidentally treat unrelated clothes as washed
-
-FabriCUe pulls wear tracking, laundry planning, reminders, and load verification into one system.
-
-## Goals
-
-- Reduce effort needed to track clothing use
-- Help students plan laundry before they run out of wearable clothes
-- Fit laundry sessions into their schedules
-- Remind students when washing and drying are nearly finished
-- Detect clothing missing from an outgoing or returning load
-- Prevent unrelated clothing from having its wear history reset
-
-## System components
-
-| Component | Purpose |
-| --- | --- |
-| Individual RFID tags | Give each clothing item a unique identity |
-| Doorway RFID reader | Detect tagged clothing moving through the doorway |
-| Mobile app | Store clothing profiles, show wear counts, manage laundry loads, send reminders |
-| Scheduling system | Support manual laundry times or calendar-based scheduling |
-| Reader indicator light | Visible alert (for example, flashing red when a selected laundry item is missing) |
-
-The RFID reader identifies clothing. The app interprets those readings based on the current activity: everyday wear tracking or laundry load verification.
-
-## Hardware and data flow
-
-**Hardware stack**
-
-- RFID tags attached to clothing
-- **YRM1003** RFID reader at the doorway
-- **ESP32** microcontroller for local scan handling and Wi-Fi upload
-- Reader indicator light for missing-item alerts
-
-**Data flow**
+The ESP32 uploads RFID scan events to Firebase. The open Smart Laundry app processes
+those events, updates wears remaining, and saves the result back to Firebase.
+**No Cloud Functions or Blaze plan are needed for this workflow.**
 
 ```text
-Clothing RFID tag
-  → YRM1003 RFID reader
-  → ESP32 (local store + Wi-Fi)
-  → Cloud
-  → Mobile app
+RFID → YRM1003 → ESP32 → Firebase /scans
+                              ↕
+                   Open Smart Laundry app
+                   computes wears remaining
+                              ↕
+                       Firebase /closet
 ```
 
-The ESP32 stores scan data locally and uploads it over Wi-Fi. The mobile app reads cloud data to update wear counts, track laundry progress, and surface missing-item alerts.
+## Installed iPhone app
 
-## Clothing setup and profiles
+The actual iOS project is ready at `ios/App/App.xcodeproj`. It bundles your HTML
+interface and Firebase SDK locally with Capacitor, plus native camera/Photos,
+backup sharing, and laundry timer notifications. See [IOS-SETUP.md](IOS-SETUP.md)
+for Mac requirements, signing, and installation.
 
-Students register each clothing item and link it to its RFID tag.
+On a Mac with Xcode 16.1+ and Node 24.12+:
 
-Each clothing profile includes:
+```sh
+npm ci
+npm run ios:sync
+npm run ios:open
+```
 
-- Photo of the item
-- Color
-- Category (shirt, hoodie, pants, shorts, jeans, etc.)
-- Unique RFID identifier
-- Wear-day limit before washing
-- Current wear count and laundry status
+This Linux workspace cannot compile/sign the iOS app. The web bundle and native
+adapters are tested; camera and notification delivery still need an iPhone test.
+Keeping the app active is still required for immediate RFID processing/handshakes.
 
-Wear limits are student preferences (or app defaults by clothing type). Example: a shirt limited to five wear days. The app estimates laundry need from recorded wear days; it does not sense whether clothing is physically clean.
+## Run and deploy
 
-## Everyday wear tracking
+Use Node.js 22 or later. From this repo:
 
-In normal operation, a wear day is recorded when a registered item leaves the room.
+```sh
+npm install
+npm run login
+npm run deploy
+npm run preview
+```
 
-Rules:
+`npm run deploy` publishes **only database rules and Hosting**. It does not deploy
+Cloud Functions. Deployment is necessary because the app now has permission to
+write processed wardrobe state directly. If rules are already deployed, start local
+preview with just `npm run preview`.
 
-- At most **one wear count per item per calendar day**
-- Multiple doorway trips on the same day do not add more counts
-- The next calendar day can add another count
+- Smart Laundry app: **http://localhost:8000/smart-laundry.html**
+- All raw RFID scans: **http://localhost:8000/**
+- Expected hosted app: **https://lightlink-cbe74.web.app/smart-laundry.html**
 
-Example:
+These URLs are destinations, not confirmation that the latest code is deployed.
+The preview uses the real Firebase project. Do not run `firebase init` over this setup.
+`npm run preview` and `npm run deploy` prepare a served copy of the root
+`smart-laundry.html`. Edit that root file; the copy in `server/web` is generated.
 
-1. Student leaves wearing a hoodie → count +1
-2. Returns and leaves again later the same day → no extra count
-3. Leaves again the next day → count can increase again
+If you previously deployed `saveCloset` or `countWearFromScan`, remove those old
+functions from the Firebase console before using this mode. Redeploying only Hosting
+and rules does not remove previously deployed functions. The app no longer calls or
+needs them; the old function source/dependencies have been removed from the project.
 
-Assumption for the initial concept: clothing leaving the room during normal tracking has been worn. Clothes carried out for other reasons may need refinement during development.
+## Clothing setup and migration
 
-## Clothing status and visual tracking
+Open the app in the **same browser and origin used previously**. Existing clothing
+profiles, photos, RFID assignments, counts, and dates are imported into Firebase.
+Existing cloud records win over stale cached copies. On migration errors, local
+clothing data is retained. Export Backup is still available for an additional copy.
+A `file://` page, localhost, and a hosted site have separate browser storage; restore
+an exported backup in the target origin if necessary.
 
-Each item’s progress toward its wear limit uses a green / yellow / red indicator.
+To add clothing:
 
-| Status | Meaning |
-| --- | --- |
-| Green — Good to Wear | Comfortably below the wear limit |
-| Yellow — Almost Time for Laundry | Approaching the wear limit |
-| Red — Needs Washing | At or past the wear limit |
+1. Tap **Add Clothing**, take or choose a photo, and enter details and a wear limit.
+2. Tap **Next: Scan RFID Tag** and wait for the live connection.
+3. Bring only that clothing's tag to the reader.
+4. The next new scan assigns its tag and saves the clothing automatically.
 
-The clothing tracker has three matching tabs. Each item shows its photo, current wear count, and limit (for example, `4 of 5 wear days`).
+Saved scan history is ignored during enrollment. Assigned tags are rejected; several
+tags detected in one batch require scanning only the intended tag again. Cancel
+stops enrollment. If the tag is already in range, remove it and bring it back to
+produce a new ESP32 event. The registration event does not consume a wear.
 
-The exact threshold for yellow will be defined during development and should scale sensibly across different wear limits.
+The banner shows cloud connection, pending saves, and errors. Wait for **Saved in
+Firebase** before closing after an edit. A second browser can load the same wardrobe.
+Calendar plans, display name, and laundry timers are still local to each browser.
 
-## Laundry scheduling
-
-After setup, the app can prompt students to connect Google Calendar. Two approaches:
-
-### Manual scheduling
-
-Students pick laundry days and times (for example, every Sunday afternoon or a specific evening).
-
-### Automatic scheduling
-
-With calendar access, the app looks for free time inside the student’s preferred laundry hours. When enough clothing is near or past its wear limit, it proposes a session.
-
-Automatic scheduling should consider:
-
-- How many items need washing or are approaching limits
-- Calendar commitments
-- Allowed laundry hours
-- Expected wash + dry duration
-- Existing laundry sessions
-
-Trigger item count, session length, and reschedule behavior remain adjustable project rules.
-
-## App home page
-
-The home dashboard is the main entry point and should surface the next useful action based on session state:
-
-- Upcoming laundry sessions
-- Clothing tracker (wear counts and status)
-- Ready for Laundry (start load review)
-- Active laundry session (wash → dry → return)
-- Alerts (missing items, timer reminders)
-
-## “Ready for Laundry” swipe review
-
-Before a session, the student taps **Ready for Laundry** and reviews clothes in a swipe interface, prioritized:
-
-1. Red — needs washing
-2. Yellow — approaching limit
-3. Green — still wearable
-
-Each card shows photo, wear count, limit, and status.
-
-| Gesture | Action |
-| --- | --- |
-| Swipe right | **Wash it** — add to laundry cart |
-| Swipe left | **Skip it** — leave out of the load; reduce displayed wear count by one day (never below zero) |
-
-Skip is a product judgment call: it postpones washing in the UI without physically cleaning the item. Revisit this rule as the product develops.
-
-## Laundry cart and departure check
-
-After review, the student taps **Done** and confirms the cart summary.
-
-The reader then enters **laundry departure mode**. Only items in the confirmed cart affect the load check.
-
-As selected items leave the room:
-
-- Marked as detected
-- Status → **Being Washed**
-- App tracks which cart items are still missing
-
-If an item is still unscanned after the departure window, the app sends a forgotten-item notification (photo + profile) and the reader flashes red.
-
-Use a short scan window or an explicit “done scanning” step before declaring something missing — a full load may take several moments to pass the doorway.
-
-## Washing and drying tracking
-
-When the selected load has left the room, the home page shows **Track Your Laundry**.
-
-**Washing**
-
-1. Tap Start Washing
-2. Enter wash-cycle duration
-3. Start the app timer
-4. Notifications: 5 minutes before end, and at completion
-
-**Drying**
-
-1. Tap Start Drying
-2. Enter drying duration
-3. Start the next timer
-4. Same 5-minute and completion notifications
-
-This version uses student-entered timers. Direct washer/dryer machine communication is out of scope for the initial concept.
-
-## Return check and wear-count reset
-
-After drying, the system enters **laundry return mode** and looks for items from that session.
-
-As each expected item returns through the doorway:
-
-- Marked as returned
-- Wear count resets to **0**
-- Status returns to **Good to Wear**
-
-If some items return and others do not, the app notifies which clothing is missing. Unreturned items stay unresolved in the session — they are not automatically marked clean.
-
-## Protecting unrelated clothing
-
-Laundry scans must affect **only** items in the active laundry cart.
-
-Example: a student wears a hoodie while carrying a laundry basket. If that hoodie is not in the confirmed load, detecting its tag must **not** reset its wear count or mark it washed.
-
-The same rule applies on return.
-
-Technically the reader may still see nearby tags. The app must filter readings so:
-
-- Only expected laundry items update the active session
-- Everyday wear counting stays separate from laundry verification
-- A laundry departure does not accidentally add a wear day
-
-## Main operating states
-
-| State | System behavior |
-| --- | --- |
-| Normal tracking | Record at most one wear day per item per day |
-| Laundry selection | Student reviews clothing and builds a cart |
-| Departure check | Verify selected items leave the room |
-| Washing | Track student-started wash timer and reminders |
-| Drying | Track student-started drying timer and reminders |
-| Return check | Verify returning items and reset their wear counts |
-| Completed / unresolved | Close when all items return, or show missing items |
-
-## Build design summary
+## Demo counting behavior
 
 ```text
-┌──────────────┐     doorway scan      ┌────────────┐     Wi-Fi      ┌───────┐
-│ RFID clothing │ ───────────────────▶ │ YRM1003 +  │ ─────────────▶ │ Cloud │
-│ tags          │                      │ ESP32      │                └───┬───┘
-└──────────────┘                      │ + light    │                    │
-                                      └────────────┘                    ▼
-                                                               ┌────────────────┐
-                                                               │ Mobile app     │
-                                                               │ profiles       │
-                                                               │ wear tracking  │
-                                                               │ scheduling     │
-                                                               │ laundry flow   │
-                                                               │ alerts         │
-                                                               └────────────────┘
+New clothing with limit 5 → 5 wears remaining
+Next uploaded scan      → 4 remaining
+Another uploaded scan   → 3 remaining
+At zero remaining       → laundry due
 ```
 
-**Product loop**
+There is **no once-per-day restriction** in the hackathon demo. The original daily
+reducer is retained only as a reusable/tested model; app mode calls the per-event
+demo reducer. The database retains `tracking.wears` as the number of allowances
+used for compatibility with the design. `tracking.remainingWears` is the decreasing
+value shown on closet cards and clothing profiles. It never goes below zero.
 
-1. Register clothes + RFID tags + wear limits
-2. Track wear as items leave the room (once per day)
-3. Surface green / yellow / red laundry readiness
-4. Schedule laundry manually or via calendar
-5. Swipe to build a laundry cart
-6. Departure check → wash timer → dry timer → return check
-7. Reset wear counts only for verified returned cart items
+Processing rules:
 
-## Open decisions for development
+- Every unique uploaded scan event is processed once; its ID and outcome are
+  stored under `/closet/processedScans` in the same transaction as the count.
+- Refreshing or two open app windows cannot consume the same event twice.
+- Initial registration and pre-migration/pre-demo history never consume wears.
+- Unknown tags remain in raw history but do not change clothing counts.
+- Active laundry items are skipped until the bedroom return check completes and
+  restores their wear allowance in Firebase.
+- **Use One Wear (Demo)** manually consumes one allowance using the same app logic.
+- Swiping left skips laundry without changing wears.
+- Deleting raw `/scans` does not reset clothing counts or processed-event records.
 
-These are called out in the plan as rules to refine while building:
+The ESP32 should upload **one event per tag appearance**, not every radio detection.
+Suppress repeats while the tag stays in range, and re-arm that tag only after an
+absence. Different event IDs deliberately consume separate allowances in demo mode.
 
-- Yellow-status threshold relative to wear limit
-- How many near-limit items trigger automatic scheduling
-- Default laundry session duration and reschedule behavior
-- Scan-window length vs explicit completion for missing-item alerts
-- Whether swipe-left should reduce wear count (current concept: yes, never below zero)
-- Handling clothes carried out without being worn
+**Keep the Smart Laundry app open for immediate processing.** Firebase keeps scans
+while the app is closed. On reopening, the app processes saved events not already
+marked processed. The raw scan-library page alone does not process wardrobe counts.
+The installed iPhone app uses this processing approach while active; continuous
+background RFID processing is not provided.
 
-## Repository status
+## Return signal to ESP32
 
-This repository holds the FabriCUe / Smart Laundry Solution project for CU Make. Implementation (firmware, cloud, and mobile app) will land here as the build progresses.
+The app now sends automatic `a/b/c` results and supports manual `d` testing. See
+[ESP32-FIREBASE.md](ESP32-FIREBASE.md) for the exact firmware read/write contract.
 
-## License
+- Read **`/signal/value`**: `a` green (>1 wear remaining), `b` yellow (1 remaining),
+  `c` red (0 remaining), or `d` flashing red (missing-item alert/test).
+- Read the full `/signal` object to obtain its `commandId` and `revision`.
+- After applying a command, firmware writes `/acknowledgement` with the same
+  `commandId`, `value`, and a Firebase server `appliedAt` timestamp.
+- The persistent app banner distinguishes a saved command from Device confirmed.
+- Highest severity wins for tags scanned within a two-second group. Later groups
+  start fresh. Physical reader deduplication still belongs in ESP32 firmware.
+- Test A/B/C/D buttons are on the app Scanner screen. They do not consume wears.
+- Automatic `d` is sent when a pre-wash laundry check finds missing or unexpected tags.
 
-TBD
+This still uses app-side computation and Firebase transactions, with no Cloud
+Functions or paid services required by this workflow. The app must be open to send
+new computed results. `/signal` is the sole return-command object.
+
+## ESP32 connection handshake and full reset
+
+**Every fresh ESP32 connection starts an empty demo**, as requested. Clothing,
+photos, RFID links, counts, scan history, commands and acknowledgements are deleted.
+The app also clears its local data and reloads once. Normal tag scans keep their data.
+
+Firmware must generate a unique connection ID per Wi-Fi connection, then write:
+
+```text
+/status/response      = "waiting"
+/status/connectionId  = "<new unique ID>"
+/status/communication = "success"
+```
+
+Keep the updated Smart Laundry app open. It atomically clears the previous data,
+sets `/status/session` to ready, and writes `/status/response = "successful"`.
+Only then should firmware begin scanning. Include the current connection ID in
+**every scan and LED acknowledgement**. Regenerating it per scan would reset the demo;
+reusing it across restarts would prevent a new reset.
+
+The old three-letter strings alone cannot detect reconnects reliably; the firmware
+update is required. Refreshing the app with the same connection ID never resets the
+server data again. Connection/session metadata is preserved solely to prevent
+repeated resets. See [ESP32-FIREBASE.md](ESP32-FIREBASE.md) for the full firmware contract.
+
+## ESP32 upload format
+
+Append one record per appearance with an HTTPS POST:
+
+```http
+POST /scans.json HTTP/1.1
+Host: lightlink-cbe74-default-rtdb.firebaseio.com
+Content-Type: application/json
+
+{
+  "tagId": "E200001234",
+  "receivedAt": {".sv": "timestamp"},
+  "connectionId": "YOUR_CURRENT_CONNECTION_ID"
+}
+```
+
+No authentication is required for this single-system prototype. Firebase generates
+a scan ID and resolves its server timestamp. Preserve tag IDs as strings, including
+leading zeros. The ID must contain a letter/digit and be at most 256 characters.
+`connectionId` is required after a connection reset; it must match the active session. Check the HTTP response for upload success.
+Do not PUT over `/scans`: raw history is append-only and existing events cannot be
+changed/deleted by clients. An offline upload's receipt time is not its physical scan
+time. Future event-time tracking needs a separate agreed firmware timestamp field.
+
+References: [Firebase REST writes](https://firebase.google.com/docs/database/rest/save-data),
+[server values](https://firebase.google.com/docs/reference/rest/database#section-server-values).
+
+## Database structure
+
+```text
+scans/<event ID>/                 raw ESP32 tagId + receivedAt
+closet/settings/                 processing: app, mode: demo, timezone, demoSince
+closet/items/<clothing ID>/
+  profile/                       name, type, color, limit, RFID, photoKey
+  tracking/                      wears used, remainingWears, wornDates, trackingSince
+  revision                       profile edit version
+closet/processedScans/<event ID>/ outcome and processing timestamps
+closet/appliedRequests/          app save retry protection
+clothingPhotos/<photoKey>        photo data URL
+signal/                         return command: value, commandId, revision, etc.
+acknowledgement/                ESP32-applied commandId, value, appliedAt
+```
+
+Photos are separate so transactions do not repeatedly transfer the image data.
+After a connection reset, photo records contain data URLs plus their connection ID.
+The app's writes and counters use Firebase transactions to prevent lost updates.
+Photo/profile data and scan history are publicly accessible for this no-login
+prototype; wardrobe writes are now allowed for app processing. Avoid root-level
+public access. For broader use, add authentication and move images to object storage.
+The browser retains a local cache and pending edit IDs to recover offline edits.
+
+## Testing the demo
+
+1. Deploy, open Smart Laundry, and wait for the saved banner. Confirm migrated
+   clothing names, photos, RFID links, and counts.
+2. Add a new clothing item through photo → scan → assignment. With limit 5 it
+   should show 5 remaining immediately after registration.
+3. Remove the tag from reader range long enough to re-arm it, then scan again:
+   4 remaining. Repeat: 3 remaining. No need to wait for a different day.
+4. Refresh: remaining must stay 3, not decrease from history replay.
+5. Close all Smart Laundry windows, generate a new scan, reopen: the new event
+   should be processed once. Check `/closet/processedScans` for its outcome.
+6. Two open Smart Laundry windows should still consume each event only once.
+
+## Checks
+
+```sh
+npm run check
+npm run test:scans
+npm run test:laundry
+npm run test:wear
+npm run test:demo
+npm run test:indicator
+npm run test:communication
+npm run test:sync
+npm run test:firebase
+npm run test:app
+```
+
+The Firebase tests use local Auth/Realtime Database emulators under `demo-lightlink`;
+Java 21+ is required. No Functions emulator or paid Firebase services are needed.
+They check rules, migration, profile/photo restoration, offline changes, duplicate
+processing across two clients, and same-day allowance consumption. No tests write
+to the live database. Visual browser and hardware testing must be done on your setup.
+
+## Next stages
+
+The old light prototype is archived in `legacy/ios-light`. The current installed
+iPhone project is `ios/App/App.xcodeproj`; see `IOS-SETUP.md`.
+
+Google Calendar integration remains next. Pre-wash RFID checks and bedroom return
+resets are implemented in the open app. The installed iPhone app adds local timer
+notifications, while scan processing remains foreground-only.
+See `Smart Laundry Solution.pdf` for the project concept and agreed demo changes.
+
+### Check clothes before washing and after drying
+
+Add clothes to the cart and start a laundry load. In the laundry panel, tap **START RFID CHECK**, then scan each selected clothing tag. The panel shows present, missing/not yet scanned, and unexpected items. Previous scans do not count. Remove unexpected pieces, tap **RESTART CHECK**, and rescan the complete load. The wash timer requires a live Firebase connection and a matching load. Untagged clothing must be linked first. Keep the app open; checks and timers stay on this device.
+
+After drying, use **START BEDROOM CHECK** in the return panel. Scan each item from the load, then tap **CONFIRM RETURN**. That restores full wear allowance in Firebase and clears the load. Confirm stays disabled while any selected item is still missing.
