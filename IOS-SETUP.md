@@ -12,8 +12,9 @@ as the browser app. It does not load the UI from the hosted website.
 - Native camera / Photos selection for clothing pictures.
 - Native share sheet to export wardrobe backups to Files, AirDrop, etc.
 - Wash/dry local notifications five minutes before and at the entered timer end.
-- Calendar laundry plans (manual or local auto suggestion) schedule a 30-minute warning
-  and an at-time reminder on the phone. No Google Calendar or cloud push is required.
+- Calendar laundry plans (manual or AUTO) schedule a 30-minute warning and an at-time
+  reminder on the phone. AUTO can optionally connect Google Calendar (client-side) to
+  suggest a free slot; wardrobe-only AUTO works without it. No cloud push is required.
 - Safe-area layout, app icon, launch artwork, and camera/photo permission text.
 - Existing Firebase handshake, RFID assignment, demo wears remaining, and a/b/c/d.
 
@@ -93,8 +94,17 @@ For photo testing, use a physical iPhone; Simulator camera support is limited.
    the timer-end reminder arrives. For a five-minute warning, use a longer timer.
 8. Open Calendar, save a manual or AUTO SUGGESTION plan a few minutes ahead, lock
    the phone, and confirm the laundry reminder. Remove the plan and confirm it
-   does not fire again.
+   does not fire again. With a Client ID configured, connect Google Calendar from
+   AUTO and confirm a free day/time is suggested from your schedule.
 9. Reopen the app and verify timer state, clothing data, and Firebase reconnection.
+
+### Google Calendar Client ID (optional)
+
+1. In Google Cloud, create an OAuth **Web** client and enable the Calendar API.
+2. Add authorized JavaScript origins for `http://localhost:8000`, your Hosting URL,
+   and `capacitor://localhost` for the installed app.
+3. Paste the client ID into `server/web/google-calendar-config.js` as `GOOGLE_CLIENT_ID`.
+4. Rebuild/sync the iOS app (`npm run ios:sync`) after changing that file.
 
 Native reminders can be delivered while the app is backgrounded, but **RFID
 processing and successful handshake replies still need the app active**. Local

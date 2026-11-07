@@ -328,6 +328,7 @@
         panelEntry = ''; showReturnItems = false; restoreCandidate = null;
         chosen = s.date; month = dt(s.date); query = ''; filter = 'All';
         localStorage.removeItem('smart-laundry-cloud-pending-v1');
+        window.smartLaundryGoogleCalendar?.clearSession?.();
         localStorage.setItem(key, id);
         save(); if (modal.open) modal.close();
         window.location.reload();
@@ -375,5 +376,8 @@
     data.error = 'Could not load Firebase. Check your connection, then reload the app.';
     if (page === 'Scanner') paintScanner();
     updateEnrollment();
+  });
+  import('./schedule-auto.js?v=1').catch(() => {
+    console.warn('AUTO Google Calendar scheduling module failed to load; wardrobe-only HTML helpers remain.');
   });
 })();

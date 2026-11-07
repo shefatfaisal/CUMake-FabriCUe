@@ -260,10 +260,21 @@ to the live database. Visual browser and hardware testing must be done on your s
 The old light prototype is archived in `legacy/ios-light`. The current installed
 iPhone project is `ios/App/App.xcodeproj`; see `IOS-SETUP.md`.
 
-Calendar scheduling is local: Manual picks a date/time, AUTO SUGGESTION estimates a
-day from remaining wears in tops/bottoms (not Google Calendar). Saving a plan stores
-it on the device and, in the iPhone app, schedules local notifications (30 minutes
-before and at the planned time). Google Calendar free-slot sync remains future work.
+Calendar scheduling is local to the device (and local iPhone notifications):
+
+- **Manual:** you pick date and time.
+- **AUTO without Google Calendar:** uses how worn your tops/bottoms are (percent of
+  allowance used) and suggests laundry about **+X days** from now.
+- **AUTO with Google Calendar connected:** reads your busy times (client-side OAuth,
+  Calendar read-only, no Cloud Functions) and suggests a free day/time in preferred
+  laundry windows (weeknights 18:00–21:00, weekends 10:00–18:00), still considering
+  wardrobe urgency.
+
+Paste a Google OAuth **Web Client ID** into
+[`server/web/google-calendar-config.js`](server/web/google-calendar-config.js) to enable
+Connect. Until then, AUTO stays wardrobe-only. Saving a plan still schedules local
+reminders (30 minutes before and at the planned time) on iPhone.
+
 Pre-wash RFID checks and bedroom return resets are implemented in the open app.
 Wash/dry timer notifications stay separate from calendar reminders. Scan processing
 remains foreground-only.

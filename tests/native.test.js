@@ -89,7 +89,7 @@ test('native bundle contains local app assets and no external Firebase SDK impor
  assert.match(html,/native-runtime\.js/);
  assert.match(html,/viewport-fit=cover/);
  assert.match(html,/window\.smartLaundryUI\.pickPhoto\(\)/);
- for(const file of ['native.css','native-runtime.js','laundry-firebase.js','laundry-rfid.js','scans.html'])await access(new URL(file,base));
+ for(const file of ['native.css','native-runtime.js','laundry-firebase.js','laundry-rfid.js','schedule-auto.js','scans.html'])await access(new URL(file,base));
  for(const file of (await readdir(base)).filter(file=>file.endsWith('.js'))){
   const js=await readFile(new URL(file,base),'utf8');
   assert.doesNotMatch(js,/(?:from\s*|import\s*\()['"]https:\/\/www\.gstatic\.com/);
