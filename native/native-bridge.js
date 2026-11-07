@@ -1,6 +1,10 @@
 // Native-only adapter. This classic script shares the supplied HTML's global state.
 (() => {
-  const state = () => ({load:s.load?JSON.parse(JSON.stringify(s.load)):null,connectionId:localStorage.getItem('smart-laundry-connection-id')});
+  const state = () => ({
+    load:s.load?JSON.parse(JSON.stringify(s.load)):null,
+    events:Array.isArray(s.events)?JSON.parse(JSON.stringify(s.events)):[],
+    connectionId:localStorage.getItem('smart-laundry-connection-id')
+  });
   const changed = () => window.dispatchEvent(new CustomEvent('smart-laundry:changed',{detail:state()}));
   const previousSave=save;
   save=function(){previousSave();changed();};
@@ -26,6 +30,7 @@
     },
     resume(){syncToday();checkLoad();render();changed();},
     openLaundry(){checkLoad();go('Cart');},
+    openCalendar(){go('Calendar');},
     refresh:changed
   };
   function linkHistory(){for(const a of document.querySelectorAll('a[href="/"]'))a.setAttribute('href','/scans.html');}

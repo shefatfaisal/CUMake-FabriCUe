@@ -4,7 +4,12 @@ import {App} from '@capacitor/app';
 import {Share} from '@capacitor/share';
 import {Filesystem,Directory,Encoding} from '@capacitor/filesystem';
 import {LocalNotifications} from '@capacitor/local-notifications';
-import {TIMER_NOTIFICATION_IDS,timerNotifications} from './notifications.js';
+import {
+ TIMER_NOTIFICATION_IDS,
+ SCHEDULE_NOTIFICATION_IDS,
+ timerNotifications,
+ schedulePlanNotifications
+} from './notifications.js';
 
 if(Capacitor.isNativePlatform()){
  const ui=window.smartLaundryUI;
@@ -25,23 +30,38 @@ if(Capacitor.isNativePlatform()){
    }catch{ui.notify('Could not share the backup. Please try again.');}
   }
  };
- let lastTimer='',sequence=Promise.resolve();
- function updateTimer(state){
-  const key=JSON.stringify(state.load&&{stage:state.load.stage,end:state.load.end});
-  if(key===lastTimer)return;
-  lastTimer=key;
-  sequence=sequence.then(async()=>{
-   await LocalNotifications.cancel({notifications:TIMER_NOTIFICATION_IDS.map(id=>({id}))});
-   const notifications=timerNotifications(state.load);
-   if(!notifications.length)return;
-   let permission=await LocalNotifications.checkPermissions();
-   if(permission.display==='prompt')permission=await LocalNotifications.requestPermissions();
-   if(permission.display!=='granted'){ui.notify('Enable notifications in iPhone Settings for laundry timer reminders.');return;}
-   await LocalNotifications.schedule({notifications});
-  }).catch(()=>{lastTimer='';ui.notify('Could not schedule laundry reminders. Your in-app timer still works.');});
+ let lastKey='',sequence=Promise.resolve();
+ async function ensurePermission(){
+  let permission=await LocalNotifications.checkPermissions();
+  if(permission.display==='prompt')permission=await LocalNotifications.requestPermissions();
+  return permission.display==='granted';
  }
- window.addEventListener('smart-laundry:changed',event=>updateTimer(event.detail));
- await App.addListener('appStateChange',({isActive})=>{if(isActive){lastTimer='';ui.resume();}});
- await LocalNotifications.addListener('localNotificationActionPerformed',()=>ui.openLaundry());
- updateTimer(ui.state());
+ function updateReminders(state){
+  const key=JSON.stringify({
+   load:state.load&&{stage:state.load.stage,end:state.load.end},
+   events:(state.events||[]).map(e=>({date:e.date,time:e.time,label:e.label,auto:!!e.auto}))
+  });
+  if(key===lastKey)return;
+  lastKey=key;
+  sequence=sequence.then(async()=>{
+   const timer=timerNotifications(state.load);
+   const plans=schedulePlanNotifications(state.events||[]);
+   const reserved=[...TIMER_NOTIFICATION_IDS,...SCHEDULE_NOTIFICATION_IDS].map(id=>({id}));
+   await LocalNotifications.cancel({notifications:reserved});
+   if(!timer.length&&!plans.length)return;
+   if(!(await ensurePermission())){
+    ui.notify('Enable notifications in iPhone Settings for laundry reminders.');
+    return;
+   }
+   await LocalNotifications.schedule({notifications:[...timer,...plans]});
+  }).catch(()=>{lastKey='';ui.notify('Could not schedule laundry reminders. Your in-app plans and timers still work.');});
+ }
+ window.addEventListener('smart-laundry:changed',event=>updateReminders(event.detail));
+ await App.addListener('appStateChange',({isActive})=>{if(isActive){lastKey='';ui.resume();}});
+ await LocalNotifications.addListener('localNotificationActionPerformed',(action)=>{
+  const id=action?.notification?.id;
+  if(SCHEDULE_NOTIFICATION_IDS.includes(id))ui.openCalendar();
+  else ui.openLaundry();
+ });
+ updateReminders(ui.state());
 }

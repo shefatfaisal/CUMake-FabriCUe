@@ -260,9 +260,13 @@ to the live database. Visual browser and hardware testing must be done on your s
 The old light prototype is archived in `legacy/ios-light`. The current installed
 iPhone project is `ios/App/App.xcodeproj`; see `IOS-SETUP.md`.
 
-Google Calendar integration remains next. Pre-wash RFID checks and bedroom return
-resets are implemented in the open app. The installed iPhone app adds local timer
-notifications, while scan processing remains foreground-only.
+Calendar scheduling is local: Manual picks a date/time, AUTO SUGGESTION estimates a
+day from remaining wears in tops/bottoms (not Google Calendar). Saving a plan stores
+it on the device and, in the iPhone app, schedules local notifications (30 minutes
+before and at the planned time). Google Calendar free-slot sync remains future work.
+Pre-wash RFID checks and bedroom return resets are implemented in the open app.
+Wash/dry timer notifications stay separate from calendar reminders. Scan processing
+remains foreground-only.
 See `Smart Laundry Solution.pdf` for the project concept and agreed demo changes.
 
 ### Check clothes before washing and after drying

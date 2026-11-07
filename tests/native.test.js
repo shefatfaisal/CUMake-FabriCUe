@@ -2,7 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,access,readdir} from 'node:fs/promises';
 import vm from 'node:vm';
-import {timerNotifications,TIMER_NOTIFICATION_IDS} from '../native/notifications.js';
+import {
+ timerNotifications,
+ TIMER_NOTIFICATION_IDS,
+ schedulePlanNotifications,
+ SCHEDULE_NOTIFICATION_IDS,
+ SCHEDULE_NOTIFICATION_BASE,
+ SCHEDULE_WARNING_MS,
+ planAt
+} from '../native/notifications.js';
 
 test('native timer reminders use real deadlines, skip elapsed warnings, and stay within reserved IDs',()=>{
  const now=1000000;
@@ -19,17 +27,44 @@ test('native timer reminders use real deadlines, skip elapsed warnings, and stay
  assert.deepEqual(timerNotifications({stage:'wash',end:now},now),[]);
 });
 
+test('manual and auto calendar plans schedule local reminders without colliding with timer IDs',()=>{
+ const due=new Date(Date.now()+2*60*60*1000);
+ const date=`${due.getFullYear()}-${String(due.getMonth()+1).padStart(2,'0')}-${String(due.getDate()).padStart(2,'0')}`;
+ const time=`${String(due.getHours()).padStart(2,'0')}:${String(due.getMinutes()).padStart(2,'0')}`;
+ const at=planAt({date,time});
+ assert.ok(at);
+ const now=at.getTime()-60*60*1000;
+ const notes=schedulePlanNotifications([
+  {date,time,label:'Laundry day',auto:false},
+  {date:'2000-01-01',time:'10:00',label:'Past plan',auto:true}
+ ],now);
+ assert.equal(notes.length,2,'30-minute warning and due reminder');
+ assert.equal(notes[0].schedule.at.getTime(),at.getTime()-SCHEDULE_WARNING_MS);
+ assert.equal(notes[1].schedule.at.getTime(),at.getTime());
+ assert.equal(notes[1].title,'Laundry reminder');
+ const auto=schedulePlanNotifications([{date,time,label:'Suggested wash',auto:true}],at.getTime()-10*60*1000);
+ assert.equal(auto.length,1,'skip warning when it would already be past');
+ assert.equal(auto[0].title,'Suggested laundry time');
+ assert.ok(notes.every(event=>SCHEDULE_NOTIFICATION_IDS.includes(event.id)));
+ assert.equal(new Set([...TIMER_NOTIFICATION_IDS,...SCHEDULE_NOTIFICATION_IDS]).size,
+  TIMER_NOTIFICATION_IDS.length+SCHEDULE_NOTIFICATION_IDS.length);
+ assert.equal(SCHEDULE_NOTIFICATION_BASE,42001);
+ assert.deepEqual(schedulePlanNotifications(null,now),[]);
+});
+
 test('native photo selection rejects old picker results and emits local timer changes',async()=>{
  const source=await readFile(new URL('../native/native-bridge.js',import.meta.url),'utf8');
  const preview={replaceChildren(image){this.image=image;}},label={textContent:''};
- const events=[];let saved=0;
+ const events=[];let saved=0;let calendarOpens=0;
  const context=vm.createContext({
   window:{dispatchEvent:event=>events.push(event)},localStorage:{getItem:()=>null},
-  s:{load:{stage:'wash',end:123},clothes:[]},save(){saved++;},exportCloset(){},
-  photoReadVersion:2,addPhoto:null,toast(){},syncToday(){},checkLoad(){},render(){},go(){},
+  s:{load:{stage:'wash',end:123},clothes:[],events:[{date:'2026-11-08',time:'10:00',label:'Laundry day',auto:true}]},
+  save(){saved++;},exportCloset(){},
+  photoReadVersion:2,addPhoto:null,toast(){},syncToday(){},checkLoad(){},render(){},
+  go(page){if(page==='Calendar')calendarOpens++;},
   CustomEvent:function(type,options){this.type=type;this.detail=options.detail;},
   MutationObserver:function(){this.observe=()=>{};},
-  document:{getElementById:id=>id==='photo-preview'?preview:id==='photo-label'?label:{},
+  document:{getElementById:id=>id==='photo-preview'?preview:id==='photo-label'?label:id==='phone'?{}:{},
     querySelectorAll:()=>[],createElement:()=>({})}
  });
  vm.runInContext(source,context);
@@ -42,6 +77,9 @@ test('native photo selection rejects old picker results and emits local timer ch
  context.save();assert.equal(saved,1);
  assert.equal(events[0].type,'smart-laundry:changed');
  assert.equal(events[0].detail.load.stage,'wash');
+ assert.equal(events[0].detail.events[0].auto,true);
+ ui.openCalendar();
+ assert.equal(calendarOpens,1);
 });
 
 test('native bundle contains local app assets and no external Firebase SDK imports',async()=>{

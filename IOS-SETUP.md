@@ -12,6 +12,8 @@ as the browser app. It does not load the UI from the hosted website.
 - Native camera / Photos selection for clothing pictures.
 - Native share sheet to export wardrobe backups to Files, AirDrop, etc.
 - Wash/dry local notifications five minutes before and at the entered timer end.
+- Calendar laundry plans (manual or local auto suggestion) schedule a 30-minute warning
+  and an at-time reminder on the phone. No Google Calendar or cloud push is required.
 - Safe-area layout, app icon, launch artwork, and camera/photo permission text.
 - Existing Firebase handshake, RFID assignment, demo wears remaining, and a/b/c/d.
 
@@ -89,7 +91,10 @@ For photo testing, use a physical iPhone; Simulator camera support is limited.
 6. Export Backup; the iOS share sheet should offer Save to Files / AirDrop.
 7. Start a short wash timer and allow notifications. Lock the phone and confirm
    the timer-end reminder arrives. For a five-minute warning, use a longer timer.
-8. Reopen the app and verify timer state, clothing data, and Firebase reconnection.
+8. Open Calendar, save a manual or AUTO SUGGESTION plan a few minutes ahead, lock
+   the phone, and confirm the laundry reminder. Remove the plan and confirm it
+   does not fire again.
+9. Reopen the app and verify timer state, clothing data, and Firebase reconnection.
 
 Native reminders can be delivered while the app is backgrounded, but **RFID
 processing and successful handshake replies still need the app active**. Local
