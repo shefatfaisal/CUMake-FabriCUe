@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LightLink · RFID scan library</title>
+  <link rel="stylesheet" href="/scans.css">
+</head>
+<body data-page="scans"><main>
+  <header><a class="brand" href="/">◉ LightLink <span>SMART LAUNDRY</span></a><a href="/smart-laundry.html">Open Smart Laundry app ↗</a></header>
+  <section class="intro"><div><p class="eyebrow">YOUR CLOTHING, CONNECTED</p><h1>RFID scan library</h1><p class="muted">Every tag detected by your reader, saved in one place.</p></div><span class="badge">Single-system prototype</span></section>
+  <p id="status" role="status" aria-live="polite">Loading Firebase…</p>
+  <section class="metrics" aria-label="Scan summary">
+    <article><span>Unique RFID tags</span><strong id="tag-count">—</strong></article>
+    <article><span>Stored scan events</span><strong id="scan-count">—</strong></article>
+    <article><span>Latest scan · local time</span><strong id="last-scan" class="date">—</strong></article>
+  </section>
+  <div class="toolbar"><div><h2>All detected tags</h2><p class="muted">Repeated detections are grouped here. Scan totals are not wear counts.</p></div><label for="search">Search tag ID<input id="search" type="search" placeholder="Find an RFID tag…" autocomplete="off"></label></div>
+  <section class="panel" aria-label="Unique RFID tags"><div class="table-wrap"><table><thead><tr><th>RFID tag ID</th><th>Scans</th><th>First detected</th><th>Last detected</th></tr></thead><tbody id="tag-rows"></tbody></table></div><p id="tag-empty" class="empty" hidden></p></section>
+  <section class="history"><h2>Scan history</h2><p class="muted">Every stored event, newest first. Repeated scans stay in the history.</p><div class="panel"><div class="table-wrap"><table><thead><tr><th>RFID tag ID</th><th>Received · local time</th><th>Scan record ID</th></tr></thead><tbody id="scan-rows"></tbody></table></div><p id="scan-empty" class="empty" hidden></p></div></section>
+  <details><summary>How to send RFID scans from your ESP32</summary><p>Append a new record using an HTTPS POST to:</p><pre>https://lightlink-cbe74-default-rtdb.firebaseio.com/scans.json</pre><p>JSON request body:</p><pre>{
+  "tagId": "E200001234",
+  "receivedAt": {".sv": "timestamp"}
+}</pre><p>No login is required for this prototype. Use a new record for each scan; do not overwrite <code>/scans</code>. Firebase supplies the receipt timestamp. Return commands are available under <code>/signal</code>.</p></details>
+  <footer>Live data from Firebase · Full scan history is loaded for this prototype · No wear counts are calculated yet.</footer>
+</main><script type="module" src="/bootstrap.js?v=scans-1"></script></body>
+</html>
