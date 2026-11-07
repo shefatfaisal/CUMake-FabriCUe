@@ -1,0 +1,92 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "scans": {
+      ".read": true,
+      ".indexOn": [
+        "receivedAt"
+      ],
+      "$scanId": {
+        ".write": "!data.exists() && newData.exists() && (root.child('status/session/phase').val() !== 'resetting')",
+        ".validate": "newData.hasChildren(['tagId', 'receivedAt']) && (!(root.child('status/session/connectionId').exists()) || newData.child('connectionId').val() === root.child('status/session/connectionId').val())",
+        "tagId": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 256 && newData.val().matches(/.*[a-zA-Z0-9].*/ )"
+        },
+        "receivedAt": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0 && newData.val() <= now"
+        },
+        "$other": {
+          ".validate": false
+        },
+        "connectionId": {
+          ".validate": "newData.isString()"
+        }
+      },
+      ".write": "(root.child('status/session/phase').val() === 'resetting') && !newData.exists()"
+    },
+    "closet": {
+      ".read": true,
+      ".write": "newData.exists() && ((!(root.child('status/session/phase').val() === 'resetting') && (!(root.child('status/session/connectionId').exists()) || newData.child('settings/connectionId').val() === root.child('status/session/connectionId').val())) || ((root.child('status/session/phase').val() === 'resetting') && !newData.child('items').exists() && newData.child('settings/connectionId').val() === root.child('status/session/connectionId').val()))",
+      ".validate": "newData.hasChildren(['settings']) && newData.child('settings/processing').val() === 'app' && newData.child('settings/mode').val() === 'demo'",
+      "items": {
+        "$id": {
+          ".validate": "newData.hasChildren(['profile','tracking','revision']) && newData.child('tracking/wears').isNumber() && newData.child('tracking/wears').val() >= 0 && newData.child('tracking/remainingWears').isNumber() && newData.child('tracking/remainingWears').val() >= 0"
+        }
+      }
+    },
+    "scanResults": {
+      ".read": true,
+      ".write": "(root.child('status/session/phase').val() === 'resetting') && !newData.exists()"
+    },
+    "clothingPhotos": {
+      ".read": true,
+      "$photoId": {
+        ".write": "!data.exists() && newData.exists() && (root.child('status/session/phase').val() !== 'resetting') && (!(root.child('status/session/connectionId').exists()) || newData.child('connectionId').val() === root.child('status/session/connectionId').val())",
+        ".validate": "(newData.isString() && newData.val().length <= 3000000 && newData.val().matches(/^data:image\\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\\/=]+$/)) || (newData.hasChildren(['data','connectionId']) && newData.child('data').isString() && newData.child('data').val().length <= 3000000 && newData.child('data').val().matches(/^data:image\\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\\/=]+$/))"
+      },
+      ".write": "(root.child('status/session/phase').val() === 'resetting') && !newData.exists()"
+    },
+    "signal": {
+      ".read": true,
+      ".write": "((root.child('status/session/phase').val() === 'resetting') && !newData.exists()) || ((root.child('status/session/phase').val() !== 'resetting') && newData.exists() && (!(root.child('status/session/connectionId').exists()) || newData.child('connectionId').val() === root.child('status/session/connectionId').val()))",
+      ".validate": "newData.hasChildren(['value','commandId','revision','createdAt']) && newData.child('value').isString() && (newData.child('value').val() === 'a' || newData.child('value').val() === 'b' || newData.child('value').val() === 'c' || newData.child('value').val() === 'd') && newData.child('commandId').isString() && newData.child('revision').isNumber() && newData.child('revision').val() >= 1 && (!data.exists() || newData.child('revision').val() >= data.child('revision').val())"
+    },
+    "acknowledgement": {
+      ".read": true,
+      ".write": "((root.child('status/session/phase').val() === 'resetting') && !newData.exists()) || ((root.child('status/session/phase').val() !== 'resetting') && newData.exists() && (!(root.child('status/session/connectionId').exists()) || newData.child('connectionId').val() === root.child('status/session/connectionId').val()))",
+      ".validate": "newData.hasChildren(['commandId','value','appliedAt']) && newData.child('commandId').isString() && (newData.child('value').val() === 'a' || newData.child('value').val() === 'b' || newData.child('value').val() === 'c' || newData.child('value').val() === 'd') && newData.child('appliedAt').isNumber() && newData.child('appliedAt').val() >= 0 && newData.child('appliedAt').val() <= now"
+    },
+    "status": {
+      "communication": {
+        ".read": true,
+        ".write": "newData.isString() && newData.val() === 'success'",
+        ".validate": "newData.isString() && newData.val() === 'success'"
+      },
+      "response": {
+        ".read": true,
+        ".write": "newData.val() === 'waiting' || (newData.val() === 'successful' && root.child('status/session/phase').val() === 'resetting' && newData.parent().child('session/phase').val() === 'ready')",
+        ".validate": "newData.val() === 'waiting' || newData.val() === 'successful'"
+      },
+      "connectionId": {
+        ".read": true,
+        ".write": "newData.isString() && newData.val().matches(/^[A-Za-z0-9:_-]{8,100}$/)",
+        ".validate": "newData.isString() && newData.val().matches(/^[A-Za-z0-9:_-]{8,100}$/)"
+      },
+      "session": {
+        ".read": true,
+        ".write": "newData.hasChildren(['connectionId','phase']) && newData.child('connectionId').val() === root.child('status/connectionId').val() && ((newData.child('phase').val() === 'resetting' && (!data.exists() || newData.child('connectionId').val() !== data.child('connectionId').val() || data.child('phase').val() === 'resetting')) || (newData.child('phase').val() === 'ready' && data.child('phase').val() === 'resetting' && newData.child('connectionId').val() === data.child('connectionId').val()))",
+        ".validate": "newData.hasChildren(['connectionId','phase']) && (newData.child('phase').val() !== 'ready' || (!newData.parent().parent().child('scans').exists() && !newData.parent().parent().child('clothingPhotos').exists() && !newData.parent().parent().child('closet/items').exists() && !newData.parent().parent().child('signal').exists() && !newData.parent().parent().child('acknowledgement').exists()))"
+      }
+    },
+    "users": {
+      ".write": "(root.child('status/session/phase').val() === 'resetting') && !newData.exists()"
+    },
+    "closetRequests": {
+      ".write": "(root.child('status/session/phase').val() === 'resetting') && !newData.exists()"
+    },
+    "closetResults": {
+      ".write": "(root.child('status/session/phase').val() === 'resetting') && !newData.exists()"
+    }
+  }
+}

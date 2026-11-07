@@ -1,0 +1,20 @@
+{
+  "appId": "com.lightlink.smartlaundry",
+  "appName": "Smart Laundry",
+  "webDir": "native-dist",
+  "backgroundColor": "#20211e",
+  "ios": {
+    "contentInset": "never",
+    "preferredContentMode": "mobile",
+    "allowsBackForwardNavigationGestures": true
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    }
+  }
+}

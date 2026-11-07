@@ -1,0 +1,45 @@
+{
+  "name": "lightlink",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "login": "firebase login",
+    "deploy": "firebase deploy --only database,hosting --project lightlink-cbe74",
+    "preview": "python3 -m http.server 8000 --directory server/web",
+    "check": "node --check server/web/firebase-config.js && node --check server/web/bootstrap.js && node --check server/web/scans.js && node --check server/web/scan-data.js && node scripts/prepare-web.mjs --check && node --check server/web/laundry-rfid.js && node --check server/web/laundry-firebase.js && node --check server/web/closet-sync.js && node --check server/web/closet-data.js && node --check server/web/closet-logic.js && node --check server/web/demo-processing.js && node --check server/web/indicator.js && node --check server/web/communication.js && node --check native/native-bridge.js && node --check native/runtime.js && node --check native/notifications.js && node --check scripts/build-native.mjs && node --check scripts/configure-ios.mjs && node --check scripts/check-ios.mjs && node --check scripts/package-ios.mjs",
+    "test:firebase": "firebase emulators:exec --only auth,database --project demo-lightlink \"node --test tests/firebase.test.js\"",
+    "test:scans": "node --test tests/scans.test.js",
+    "prepare:web": "node scripts/prepare-web.mjs",
+    "prepreview": "npm run prepare:web",
+    "predeploy": "npm run prepare:web",
+    "test:laundry": "node --test tests/laundry-rfid.test.js",
+    "test:wear": "node --test tests/wear.test.js",
+    "test:sync": "node --test tests/closet-sync.test.js",
+    "test:app": "firebase emulators:exec --only auth,database --project demo-lightlink \"node --test tests/app-processing.test.js\"",
+    "test:demo": "node --test tests/demo-processing.test.js",
+    "test:indicator": "node --test tests/indicator.test.js",
+    "test:communication": "node --test tests/communication.test.js",
+    "build:native": "node scripts/build-native.mjs",
+    "ios:sync": "npm run build:native && cap sync ios && node scripts/configure-ios.mjs",
+    "ios:open": "cap open ios",
+    "test:native": "npm run build:native && node --test tests/native.test.js",
+    "preview:native": "npm run build:native && python3 -m http.server 8001 --directory native-dist",
+    "ios:check": "node scripts/check-ios.mjs",
+    "ios:package": "node scripts/package-ios.mjs"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.6.10",
+    "esbuild": "^0.28.2",
+    "firebase-tools": "^15.34.1"
+  },
+  "dependencies": {
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/camera": "^7.0.5",
+    "@capacitor/core": "^7.6.10",
+    "@capacitor/filesystem": "^7.1.9",
+    "@capacitor/ios": "^7.6.10",
+    "@capacitor/local-notifications": "^7.0.7",
+    "@capacitor/share": "^7.0.4",
+    "firebase": "13.1.0"
+  }
+}

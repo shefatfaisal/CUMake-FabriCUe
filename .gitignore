@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+xcuserdata/
+DerivedData/
+.env
+.env.*
+!.env.example
+.venv/
+node_modules/
+.firebase/
+*-debug.log
+ui-debug.log
+
+# Generated from the user-owned HTML design by npm preview/deploy hooks.
+/server/web/smart-laundry.html
+
+# Rebuild native web assets before Capacitor sync.
+/native-dist/
+/ios/App/App/public/
+/ios/App/App/capacitor.config.json
+/ios/App/App/capacitor.plugins.json
+/ios/App/CapApp-SPM/.build/
+/ios/App/Pods/
+
+/artifacts/
