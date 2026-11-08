@@ -3,13 +3,15 @@ import {getAI, getGenerativeModel, GoogleAIBackend, Schema} from 'https://www.gs
 import {initializeAppCheck, ReCaptchaEnterpriseProvider, CustomProvider} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app-check.js';
 import {firebaseConfig} from './firebase-config.js';
 import {geminiConfig} from './gemini-config.js';
-import {validateClothingAnalysis, imagePart, useLocalAppCheckDebug} from './clothing-analysis.js';
+import {validateClothingAnalysis, imagePart, useLocalAppCheckDebug, useNativeAI} from './clothing-analysis.js';
 
 let aiPromise;
 async function initializeAI() {
   // Keep the database's default web app separate from the native AI identity.
   const webApp = getApps().find(app => app.name === '[DEFAULT]') || initializeApp(firebaseConfig);
-  if (globalThis.Capacitor?.isNativePlatform?.()) {
+  const bundledNative = typeof __SMART_LAUNDRY_NATIVE__ !== 'undefined' && __SMART_LAUNDRY_NATIVE__;
+  if (useNativeAI(globalThis.Capacitor, location.protocol, bundledNative)) {
+    console.info('[Smart Laundry] Gemini verification: native iOS App Check (v1).');
     const native = await import('/native-app-check.js');
     const config = await native.nativeAIConfiguration();
     if (config.projectId !== firebaseConfig.projectId || !config.appId?.includes(':ios:')) {

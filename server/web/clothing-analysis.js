@@ -19,3 +19,7 @@ export function useLocalAppCheckDebug(location, native = false) {
   return !native && ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)
     && ['http:', 'https:'].includes(location.protocol);
 }
+
+export function useNativeAI(capacitor, protocol, bundledNative = false) {
+  return bundledNative || protocol === 'capacitor:' || !!capacitor?.isNativePlatform?.();
+}
