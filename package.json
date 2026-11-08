@@ -6,7 +6,7 @@
     "login": "firebase login",
     "deploy": "firebase deploy --only database,hosting --project lightlink-cbe74",
     "preview": "python3 -m http.server 8000 --directory server/web",
-    "check": "node --check server/web/firebase-config.js && node --check server/web/bootstrap.js && node --check server/web/scans.js && node --check server/web/scan-data.js && node scripts/prepare-web.mjs --check && node --check server/web/laundry-rfid.js && node --check server/web/laundry-firebase.js && node --check server/web/closet-sync.js && node --check server/web/closet-data.js && node --check server/web/closet-logic.js && node --check server/web/demo-processing.js && node --check server/web/indicator.js && node --check server/web/communication.js && node --check server/web/wardrobe-schedule.js && node --check server/web/google-calendar-config.js && node --check server/web/google-calendar.js && node --check server/web/schedule-auto.js && node --check native/native-bridge.js && node --check native/runtime.js && node --check native/notifications.js && node --check scripts/build-native.mjs && node --check scripts/configure-ios.mjs && node --check scripts/check-ios.mjs && node --check scripts/package-ios.mjs && node --check server/web/gemini-config.js && node --check server/web/clothing-analysis.js && node --check server/web/gemini-clothing.js && node --check server/web/web-reminders.js && node --check server/web/laundry-reminder-sw.js && node --check native/app-check.js",
+    "check": "node --check server/web/firebase-config.js && node --check server/web/bootstrap.js && node --check server/web/scans.js && node --check server/web/scan-data.js && node scripts/prepare-web.mjs --check && node --check server/web/laundry-rfid.js && node --check server/web/laundry-firebase.js && node --check server/web/closet-sync.js && node --check server/web/closet-data.js && node --check server/web/closet-logic.js && node --check server/web/demo-processing.js && node --check server/web/indicator.js && node --check server/web/communication.js && node --check server/web/wardrobe-schedule.js && node --check server/web/google-calendar-config.js && node --check server/web/google-calendar.js && node --check server/web/schedule-auto.js && node --check native/native-bridge.js && node --check native/runtime.js && node --check native/notifications.js && node --check scripts/build-native.mjs && node --check scripts/configure-ios.mjs && node --check scripts/check-ios.mjs && node --check scripts/package-ios.mjs && node --check server/web/gemini-config.js && node --check server/web/clothing-analysis.js && node --check server/web/gemini-clothing.js && node --check server/web/web-reminders.js && node --check server/web/laundry-reminder-sw.js",
     "test:schedule": "node --test tests/wardrobe-schedule.test.js",
     "test:firebase": "firebase emulators:exec --only auth,database --project demo-lightlink \"node --test tests/firebase.test.js\"",
     "test:scans": "node --test tests/scans.test.js",
@@ -27,7 +27,7 @@
     "preview:native": "npm run build:native && python3 -m http.server 8001 --directory native-dist",
     "ios:check": "node scripts/check-ios.mjs",
     "ios:package": "node scripts/package-ios.mjs",
-    "test:gemini": "node --test tests/clothing-analysis.test.js tests/native-app-check.test.js"
+    "test:gemini": "node --test tests/clothing-analysis.test.js"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.6.10",

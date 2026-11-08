@@ -1,30 +1,14 @@
 import {initializeApp, getApps} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js';
 import {getAI, getGenerativeModel, GoogleAIBackend, Schema} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-ai.js';
-import {initializeAppCheck, ReCaptchaEnterpriseProvider, CustomProvider} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app-check.js';
+import {initializeAppCheck, ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app-check.js';
 import {firebaseConfig} from './firebase-config.js';
 import {geminiConfig} from './gemini-config.js';
-import {validateClothingAnalysis, imagePart, useLocalAppCheckDebug, useNativeAI} from './clothing-analysis.js';
+import {validateClothingAnalysis, imagePart, useLocalAppCheckDebug} from './clothing-analysis.js';
 
 let aiPromise;
 async function initializeAI() {
   // Keep the database's default web app separate from the native AI identity.
   const webApp = getApps().find(app => app.name === '[DEFAULT]') || initializeApp(firebaseConfig);
-  const bundledNative = typeof __SMART_LAUNDRY_NATIVE__ !== 'undefined' && __SMART_LAUNDRY_NATIVE__;
-  if (useNativeAI(globalThis.Capacitor, location.protocol, bundledNative)) {
-    console.info('[Smart Laundry] Gemini verification: native iOS App Check (v1).');
-    const native = await import('/native-app-check.js');
-    const config = await native.nativeAIConfiguration();
-    if (config.projectId !== firebaseConfig.projectId || !config.appId?.includes(':ios:')) {
-      throw Error('Native Firebase configuration must identify the iOS app in this Firebase project.');
-    }
-    const app = getApps().find(app => app.name === 'gemini-ios') || initializeApp(config, 'gemini-ios');
-    initializeAppCheck(app, {
-      provider: new CustomProvider({getToken: () => native.nativeAILimitedUseToken()}),
-      // The native bridge requests a fresh limited-use token for each AI request.
-      isTokenAutoRefreshEnabled: false
-    });
-    return getAI(app, {backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true});
-  }
   if (!geminiConfig.recaptchaEnterpriseSiteKey) {
     throw Error('Photo analysis needs Firebase AI Logic and App Check setup. You can enter the details manually.');
   }

@@ -89,7 +89,7 @@ test('native bundle contains local app assets and no external Firebase SDK impor
  assert.match(html,/native-runtime\.js/);
  assert.match(html,/viewport-fit=cover/);
  assert.match(html,/window\.smartLaundryUI\.pickPhoto\(\)/);
- for(const file of ['native.css','native-runtime.js','laundry-firebase.js','laundry-rfid.js','schedule-auto.js','native-app-check.js','gemini-clothing.js','scans.html'])await access(new URL(file,base));
+ for(const file of ['native.css','native-runtime.js','laundry-firebase.js','laundry-rfid.js','schedule-auto.js','scans.html'])await access(new URL(file,base));
  for(const file of (await readdir(base)).filter(file=>file.endsWith('.js'))){
   const js=await readFile(new URL(file,base),'utf8');
   assert.doesNotMatch(js,/(?:from\s*|import\s*\()['"]https:\/\/www\.gstatic\.com/);
@@ -117,19 +117,15 @@ test('iOS project stays compatible with the Capacitor 7 Xcode 16 toolchain',asyn
  assert.doesNotMatch(plist,/UISceneDelegateClassName/);
 });
 
-test('iOS App Check bridge configuration survives Capacitor sync',async()=>{
+test('native app keeps clothing photos and manual fields without Gemini',async()=>{
  const root=new URL('../',import.meta.url);
- const project=await readFile(new URL('ios/App/App.xcodeproj/project.pbxproj',root),'utf8');
- assert.match(project,/GoogleService-Info.plist in Resources/);
- assert.match(project,/CODE_SIGN_ENTITLEMENTS = App\/App.entitlements/);
- const storyboard=await readFile(new URL('ios/App/App/Base.lproj/Main.storyboard',root),'utf8');
- assert.match(storyboard,/customClass="SmartLaundryBridgeViewController" customModule="CapApp_SPM"/);
+ const html=await readFile(new URL('native-dist/index.html',root),'utf8');
+ assert.doesNotMatch(html,/analyzeAddPhoto|photo-analysis-status|photos are sent to Google Gemini|web-reminders.js/);
+ assert.match(html,/id="ctype"/);assert.match(html,/id="ccolor"/);assert.match(html,/id="climit"/);
+ const files=await readdir(new URL('native-dist/',root));
+ assert.ok(!files.includes('gemini-clothing.js'));assert.ok(!files.includes('native-app-check.js'));
  const swift=await readFile(new URL('ios/App/CapApp-SPM/Package.swift',root),'utf8');
- assert.match(swift,/firebase-ios-sdk.git", exact: "11.11.0"/);
- assert.match(swift,/product\(name: "FirebaseAppCheck"/);
- const bridge=await readFile(new URL('ios/App/CapApp-SPM/Sources/CapApp-SPM/SmartLaundryAppCheck.swift',root),'utf8');
- assert.match(bridge,/#if DEBUG[\s\S]*AppCheckDebugProviderFactory\(\)[\s\S]*#else[\s\S]*SmartLaundryAttestationFactory\(\)/);
- assert.match(bridge,/AppCheck.appCheck\(\).limitedUseToken/);
- const nativeHTML=await readFile(new URL('native-dist/index.html',root),'utf8');
- assert.doesNotMatch(nativeHTML,/src="\/web-reminders.js"/,'native reminders must not run twice');
+ assert.doesNotMatch(swift,/firebase-ios-sdk/);
+ const storyboard=await readFile(new URL('ios/App/App/Base.lproj/Main.storyboard',root),'utf8');
+ assert.match(storyboard,/customClass="CAPBridgeViewController"/);
 });

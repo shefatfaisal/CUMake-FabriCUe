@@ -314,13 +314,9 @@ One-time setup before live use:
 4. Run `npm run prepare:web` for browser preview, or `npm run ios:sync` to include
    the bundled SDK in the installed app. Deployment is a separate step.
 
-The native camera invokes the same analysis flow using an iOS-specific Firebase
-identity and native App Check bridge. `ios/App/App/GoogleService-Info.plist` must
-match the signed bundle ID and project. Debug builds use Firebase's native debug
-provider (register the Xcode device token under the **iOS** app in App Check).
-Release builds use App Attest, falling back to DeviceCheck on unsupported devices.
-Register those providers for the iOS app before release; see IOS-SETUP.md.
-Native code compilation and device attestation have not been verified on this Linux host.
+The installed iPhone app keeps photos and manual clothing type, color, and wear
+limit entry. Gemini photo analysis is website-only; no native App Check or
+Firebase Apple SDK setup is required for the iPhone app.
 
 Verification: `npm run test:gemini`, `npm run check`, `npm run test:native`.
 Live requests require the console setup above and were not verified locally.
