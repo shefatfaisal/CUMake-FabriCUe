@@ -314,11 +314,13 @@ One-time setup before live use:
 4. Run `npm run prepare:web` for browser preview, or `npm run ios:sync` to include
    the bundled SDK in the installed app. Deployment is a separate step.
 
-The native camera invokes the same analysis flow. App Check verification within
-Capacitor's local WKWebView has not been tested on a device; verify that environment
-before relying on native analysis. If the web provider cannot attest that origin,
-use a native App Check provider bridge or an authenticated backend rather than
-shipping a debug token. Camera selection and manual entry remain available.
+The native camera invokes the same analysis flow using an iOS-specific Firebase
+identity and native App Check bridge. `ios/App/App/GoogleService-Info.plist` must
+match the signed bundle ID and project. Debug builds use Firebase's native debug
+provider (register the Xcode device token under the **iOS** app in App Check).
+Release builds use App Attest, falling back to DeviceCheck on unsupported devices.
+Register those providers for the iOS app before release; see IOS-SETUP.md.
+Native code compilation and device attestation have not been verified on this Linux host.
 
 Verification: `npm run test:gemini`, `npm run check`, `npm run test:native`.
 Live requests require the console setup above and were not verified locally.

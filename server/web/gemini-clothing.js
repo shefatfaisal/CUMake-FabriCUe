@@ -1,28 +1,42 @@
 import {initializeApp, getApps} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js';
 import {getAI, getGenerativeModel, GoogleAIBackend, Schema} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-ai.js';
-import {initializeAppCheck, ReCaptchaEnterpriseProvider} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app-check.js';
+import {initializeAppCheck, ReCaptchaEnterpriseProvider, CustomProvider} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app-check.js';
 import {firebaseConfig} from './firebase-config.js';
 import {geminiConfig} from './gemini-config.js';
 import {validateClothingAnalysis, imagePart, useLocalAppCheckDebug} from './clothing-analysis.js';
 
-let ai;
-export async function analyzeClothing(photo, types, colors) {
-  const image = imagePart(photo);
+let aiPromise;
+async function initializeAI() {
+  // Keep the database's default web app separate from the native AI identity.
+  const webApp = getApps().find(app => app.name === '[DEFAULT]') || initializeApp(firebaseConfig);
+  if (globalThis.Capacitor?.isNativePlatform?.()) {
+    const native = await import('/native-app-check.js');
+    const config = await native.nativeAIConfiguration();
+    if (config.projectId !== firebaseConfig.projectId || !config.appId?.includes(':ios:')) {
+      throw Error('Native Firebase configuration must identify the iOS app in this Firebase project.');
+    }
+    const app = getApps().find(app => app.name === 'gemini-ios') || initializeApp(config, 'gemini-ios');
+    initializeAppCheck(app, {
+      provider: new CustomProvider({getToken: () => native.nativeAILimitedUseToken()}),
+      // The native bridge requests a fresh limited-use token for each AI request.
+      isTokenAutoRefreshEnabled: false
+    });
+    return getAI(app, {backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true});
+  }
   if (!geminiConfig.recaptchaEnterpriseSiteKey) {
     throw Error('Photo analysis needs Firebase AI Logic and App Check setup. You can enter the details manually.');
   }
-  if (!ai) {
-    const app = getApps()[0] || initializeApp(firebaseConfig);
-    // Local preview uses registered debug tokens; hosted/native apps use attestation.
-    if (useLocalAppCheckDebug(location, !!globalThis.Capacitor?.isNativePlatform?.())) {
-      self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-    }
-    initializeAppCheck(app, {
-      provider: new ReCaptchaEnterpriseProvider(geminiConfig.recaptchaEnterpriseSiteKey),
-      isTokenAutoRefreshEnabled: true
-    });
-    ai = getAI(app, {backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true});
-  }
+  if (useLocalAppCheckDebug(location)) self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  initializeAppCheck(webApp, {
+    provider: new ReCaptchaEnterpriseProvider(geminiConfig.recaptchaEnterpriseSiteKey),
+    isTokenAutoRefreshEnabled: true
+  });
+  return getAI(webApp, {backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true});
+}
+export async function analyzeClothing(photo, types, colors) {
+  const image = imagePart(photo);
+  if (!aiPromise) aiPromise = initializeAI().catch(error => { aiPromise = null; throw error; });
+  const ai = await aiPromise;
   const model = getGenerativeModel(ai, {
     model: geminiConfig.model,
     generationConfig: {

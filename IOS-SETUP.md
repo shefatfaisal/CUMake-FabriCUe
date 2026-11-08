@@ -152,3 +152,52 @@ References: [Capacitor iOS workflow](https://capacitorjs.com/docs/ios),
 [camera permissions](https://capacitorjs.com/docs/apis/camera),
 [local notifications](https://capacitorjs.com/docs/apis/local-notifications),
 [Filesystem privacy manifest](https://capacitorjs.com/docs/apis/filesystem).
+
+## Gemini verification in the installed iPhone app
+
+Gemini uses native Firebase App Check rather than website reCAPTCHA on iOS.
+The included `GoogleService-Info.plist` identifies the Firebase iOS app
+`1:231995901001:ios:31f40f3cb20b303b10eb98`, project `lightlink-cbe74`, bundle ID
+`com.lightlink.smartlaundry`. If your signing bundle ID differs, register that
+bundle in Firebase and replace the plist with its matching configuration.
+
+`npm run ios:sync` now installs the native bridge configuration automatically:
+FirebaseCore and FirebaseAppCheck are pinned to 11.11.0 (Swift 5.9 compatible),
+the plist is added as an app resource, and the storyboard uses the custom
+Capacitor controller. No manual Firebase wizard initialization code is needed.
+The web database identity stays separate; Gemini alone uses the iOS identity.
+Limited-use tokens are requested for each AI call to support replay protection.
+
+For **Xcode Debug builds** (including a physical phone):
+
+1. Transfer the latest source archive to the Mac, extract into a new folder, and
+   run `npm ci`, `npm run ios:sync`, then `npm run ios:open`.
+2. In Xcode, use the Debug run configuration. Under Product → Scheme → Edit Scheme
+   → Run → Arguments, add `-FIRDebugEnabled` if the Firebase debug token is not
+   visible in the console.
+3. Run on your phone and select a clothing photo. Copy the native Firebase App
+   Check debug token from the **Xcode console**, keeping it private.
+4. In Firebase → App Check → Apps, find **the iOS app**, open its ⋮ menu → Manage
+   debug tokens, and register that token. A website/browser debug token is separate.
+5. Restart the app and select a photo again. Do not reinstall just to retry, since
+   that can change the device's debug token.
+
+For **Release/TestFlight**:
+
+- Register **App Attest** for this iOS app in Firebase App Check with your Apple
+  Team ID. The Release configuration includes the production App Attest entitlement;
+  enable the matching capability/provisioning in the Apple developer account.
+- For fallback on devices without App Attest support, also register **DeviceCheck**
+  and its Apple authentication key in Firebase App Check.
+- Release builds never use the debug provider. Test an actual Release build before
+  distributing; Debug success does not validate Apple attestation.
+
+The Mac must resolve the new Firebase Swift packages on its first build. This
+Linux environment verified JS routing and asset sync, but cannot compile the Swift
+bridge or verify iPhone App Check. Run `npm run ios:check` on the Mac, then test a
+photo on the phone. Keep website domain verification enabled.
+
+References:
+- https://firebase.google.com/docs/app-check/ios/debug-provider
+- https://firebase.google.com/docs/app-check/ios/app-attest-provider
+- https://firebase.google.com/docs/app-check/ios/devicecheck-provider

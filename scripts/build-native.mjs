@@ -32,8 +32,8 @@ const firebaseCDN={name:'local-firebase-sdk',setup(b){
  });
 }};
 const result=await build({entryPoints:{'laundry-firebase':resolve(root,'server/web/laundry-firebase.js'),scans:resolve(root,'server/web/scans.js'),
- 'native-runtime':resolve(root,'native/runtime.js'),'schedule-auto':resolve(root,'server/web/schedule-auto.js'),'gemini-clothing':resolve(root,'server/web/gemini-clothing.js')},outdir:out,bundle:true,splitting:true,format:'esm',platform:'browser',
- target:['safari16.4'],plugins:[firebaseCDN],minify:true,metafile:true,logLevel:'warning'});
+ 'native-runtime':resolve(root,'native/runtime.js'),'schedule-auto':resolve(root,'server/web/schedule-auto.js'),'gemini-clothing':resolve(root,'server/web/gemini-clothing.js'),'native-app-check':resolve(root,'native/app-check.js')},outdir:out,bundle:true,splitting:true,format:'esm',platform:'browser',
+ target:['safari16.4'],external:['/native-app-check.js'],plugins:[firebaseCDN],minify:true,metafile:true,logLevel:'warning'});
 const registries=new Set(Object.keys(result.metafile.inputs).filter(path=>path.includes('@firebase/app/dist/')).map(path=>path.split('@firebase/app/dist/')[0]));
 if(registries.size!==1)throw Error('Native bundle must contain exactly one Firebase app registry.');
 const files=await readdir(out);
