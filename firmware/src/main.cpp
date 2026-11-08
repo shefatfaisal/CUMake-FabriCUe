@@ -774,14 +774,17 @@ void setup() {
           "restart the ESP32.");
     }
   } else {
-    Serial.println("Wi-Fi SSID is empty. Set it in include/firebase_config.h.");
+    Serial.println(
+        "Wi-Fi SSID is empty. Copy include/secrets.example.h to "
+        "include/secrets.h and set WIFI_SSID / WIFI_PASSWORD.");
   }
 
   lightMode = LightMode::StartupPurple;
 
   if (!firebaseConfigured) {
     Serial.println(
-        "Firebase not configured. Fill in include/firebase_config.h.");
+        "Firebase not configured. Set FIREBASE_DATABASE_HOST in "
+        "include/firebase_config.h.");
   } else if (xTaskCreatePinnedToCore(firebaseTask, "firebaseTask", 8192,
                                      nullptr, 1, nullptr, 0) != pdPASS) {
     Serial.println("ERROR: Could not start Firebase background task.");

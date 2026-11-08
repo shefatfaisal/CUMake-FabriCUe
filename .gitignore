@@ -24,3 +24,8 @@ ui-debug.log
 /ios/App/Pods/
 
 /artifacts/
+
+# ESP32 local Wi-Fi credentials and PlatformIO build output.
+/firmware/include/secrets.h
+/firmware/.pio/
+/firmware/.vscode/
