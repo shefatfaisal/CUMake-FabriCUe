@@ -1,4 +1,4 @@
-# LightLink — Smart Laundry hackathon demo
+# LightLink — Smart Laundry hackathon Project
 
 The ESP32 uploads RFID scan events to Firebase. The open Smart Laundry app processes
 those events, updates wears remaining, and saves the result back to Firebase.
