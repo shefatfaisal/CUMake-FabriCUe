@@ -7,6 +7,6 @@
  *
  * Leave empty to keep wardrobe-only AUTO suggestions.
  */
-export const GOOGLE_CLIENT_ID = '';
+export const GOOGLE_CLIENT_ID = '290585835974-5rtkm06mc0hdq63pdf27etqc1634qf0b.apps.googleusercontent.com';
 export const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
 export const GOOGLE_TOKEN_STORAGE_KEY = 'smart-laundry-google-calendar-v1';
