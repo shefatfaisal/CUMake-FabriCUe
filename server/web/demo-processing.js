@@ -25,10 +25,8 @@ export function applyAppRequest(current, request, now, operationId) {
       || tags.some(tag => typeof tag !== 'string' || !tag || tag.length > 256)) throw Error('Invalid laundry check.');
     const items = ids.map(id => base.items?.[String(id)]);
     if (items.some(item => !item)) throw Error('Selected clothing changed. Restart the laundry check.');
-    const expected = new Set(items.map(item => item.profile.rfid).filter(Boolean));
     const detected = new Set(tags);
-    const matches = items.every(item => item.profile.rfid && detected.has(item.profile.rfid))
-      && [...detected].every(tag => expected.has(tag));
+    const matches = items.every(item => item.profile.rfid && detected.has(item.profile.rfid));
     command(base, matches ? 'a' : 'd', operationId, now, 'laundryCheck', ids);
     next = base;
   } else if (request.kind === 'bedroomReturn') {

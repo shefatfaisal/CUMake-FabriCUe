@@ -28,15 +28,14 @@
   }
 
   // A check belongs to one local load. Its baseline survives reloads; history never
-  // satisfies a new check. Starting again clears unexpected detections as well.
+  // satisfies a new check. Starting again clears the recorded detections.
   function checkResult() {
     const check = s.load?.rfidCheck;
     const tags = new Set(check?.tags || []);
     const expected = s.clothes.filter(item => s.load?.ids.includes(item.id));
     return {
       present: expected.filter(item => item.rfid && tags.has(item.rfid)),
-      missing: expected.filter(item => !item.rfid || !tags.has(item.rfid)),
-      unexpected: [...tags].filter(tag => !expected.some(item => item.rfid === tag))
+      missing: expected.filter(item => !item.rfid || !tags.has(item.rfid))
     };
   }
   window.startLaundryCheck = function() {
@@ -52,18 +51,16 @@
     if (s.load?.stage !== 'ready' || !s.load.rfidCheck) return toast('Start an RFID check first.');
     if (!ready() || !window.laundryCloud?.finishLaundryCheck) return toast('Wait for the live Firebase connection before finishing the check.');
     const result = checkResult();
-    if (result.missing.length || result.unexpected.length) {
+    if (result.missing.length) {
       const card = item => {
         const photo = typeof item.photo === 'string' && /^data:image\/(?:jpeg|png|webp);base64,/.test(item.photo)
           ? `<img src="${esc(item.photo)}" alt="${esc(item.name)}" style="width:100%;height:100%;object-fit:cover">`
           : '<span aria-label="No photo" style="font-size:32px">👕</span>';
         return `<div class="sheet white" style="display:flex;align-items:center;gap:16px"><div style="width:80px;height:80px;flex-shrink:0;display:grid;place-items:center;background:#eee;border-radius:12px;overflow:hidden">${photo}</div><div><h3>${esc(item.name)}</h3><p>${item.rfid ? 'Not detected in this load' : 'No linked RFID tag'}</p></div></div>`;
       };
-      topModal(result.missing.length ? 'MISSING CLOTHES' : 'CHECK YOUR LOAD',
+      topModal('MISSING CLOTHES',
         `<p>${result.missing.length} selected item(s) not detected. Find these clothes and scan their tags, then finish checking again.</p>`
         + result.missing.map(card).join('')
-        + (result.unexpected.length ? '<h3>UNEXPECTED TAGS</h3><p>Remove these pieces, restart the check, and rescan your selected clothes.</p>'
-          + result.unexpected.map(tag => `<p style="overflow-wrap:anywhere">${esc(owner(tag)?.name || 'Unlinked tag')} · ${esc(tag)}</p>`).join('') : '')
         + '<p id="laundry-result-signal" role="status">Sending flashing red signal to ESP32…</p><button class="btn primary" onclick="closeModal()">BACK TO LOAD</button>');
     }
     finishingCheck = true;
@@ -71,7 +68,7 @@
       const value = await window.laundryCloud.finishLaundryCheck([...s.load.ids], [...s.load.rfidCheck.tags]);
       const status = document.getElementById('laundry-result-signal');
       if (status) status.textContent = value === 'd' ? 'Flashing red signal sent. See the cloud banner for ESP32 confirmation.' : 'Green signal sent. See the cloud banner for ESP32 confirmation.';
-      toast(value === 'a' ? 'Load matches. Green signal sent to ESP32.' : 'Missing or unexpected clothes. Flashing red signal sent to ESP32.');
+      toast(value === 'a' ? 'Load matches. Green signal sent to ESP32.' : 'Missing selected clothes. Flashing red signal sent to ESP32.');
     } catch (failure) {
       const status = document.getElementById('laundry-result-signal');
       if (status) status.textContent = 'Signal was not confirmed sent: ' + failure.message;
@@ -100,20 +97,19 @@
       const result = checkResult();
       const rows = (label, values) => `<p><strong>${label} (${values.length})</strong><br>${values.map(value => esc(typeof value === 'string' ? (owner(value)?.name || 'Unlinked tag') + ' · ' + value : value.name + (!value.rfid ? ' · No linked tag' : ''))).join('<br>') || 'None'}</p>`;
       el.insertAdjacentHTML('beforeend', `<div class="laundry-check" role="status"><h3>CHECK YOUR LOAD</h3>
-        <p>Scan each selected piece before washing. Remove a tag from range and bring it back to trigger a fresh scan. Keep this app open.</p>
-        ${!s.load.rfidCheck ? '<p>Start a check to ignore previous scans.</p>' : rows('PRESENT', result.present) + rows('MISSING / NOT YET SCANNED', result.missing) + rows('UNEXPECTED', result.unexpected)}
+        <p>Scan each selected piece before washing.</p>
+        ${!s.load.rfidCheck ? '<p>Start a check to ignore previous scans.</p>' : rows('PRESENT', result.present) + rows('MISSING / NOT YET SCANNED', result.missing)}
         <button class="panel-btn" onclick="startLaundryCheck()">${s.load.rfidCheck ? 'RESTART CHECK' : 'START RFID CHECK'}</button>
-        ${s.load.rfidCheck ? '<button class="panel-btn" onclick="finishLaundryCheck()">FINISH CHECKING</button><p>Finish checking sends green for a matching load, or flashing red for missing or unexpected clothes.</p>' : ''}
-        ${result.unexpected.length ? '<p>Remove unexpected clothes, then restart and rescan the load.</p>' : ''}
+        ${s.load.rfidCheck ? '<button class="panel-btn" onclick="finishLaundryCheck()">FINISH CHECKING</button><p>Finish checking sends green when all selected clothes are present, or flashing red when any are missing.</p>' : ''}
         <p>${esc(connectionText())}</p></div>`);
     };
     const originalLaunch = launchTimer;
     launchTimer = function(event, stage) {
       if (stage === 'wash') {
         const result = checkResult();
-        if (!ready() || !s.load?.rfidCheck || result.missing.length || result.unexpected.length) {
+        if (!ready() || !s.load?.rfidCheck || result.missing.length) {
           event?.preventDefault();
-          return toast('Scan every selected item and resolve unexpected tags before starting the wash.');
+          return toast('Scan every selected item before starting the wash.');
         }
       }
       return originalLaunch(event, stage);
@@ -219,6 +215,8 @@
       : value.pending ? 'Saving clothing changes to Firebase…'
       : 'Saved in Firebase · demo processing active · ' + value.timezone;
     banner.textContent = text;
+    // Routine sync runs quietly; surface failures so changes can be recovered.
+    banner.hidden = !value.error;
     if (value.output) {
       const names = {a:'GREEN', b:'YELLOW', c:'RED', d:'FLASHING RED'};
       const confirmed = value.acknowledgement?.commandId === value.output.commandId

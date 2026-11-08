@@ -27,6 +27,7 @@
       const image=document.createElement('img');image.src=photo;image.alt='Clothing photo';
       document.getElementById('photo-preview').replaceChildren(image);
       document.getElementById('photo-label').textContent='CHANGE PHOTO';
+      if(typeof analyzeAddPhoto==='function')void analyzeAddPhoto(photo,token);
     },
     resume(){syncToday();checkLoad();render();changed();},
     openLaundry(){checkLoad();go('Cart');},

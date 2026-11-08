@@ -288,3 +288,44 @@ See `Smart Laundry Solution.pdf` for the project concept and agreed demo changes
 Add clothes to the cart and start a laundry load. In the laundry panel, tap **START RFID CHECK**, then scan each selected clothing tag. The panel shows present, missing/not yet scanned, and unexpected items. Previous scans do not count. Remove unexpected pieces, tap **RESTART CHECK**, and rescan the complete load. The wash timer requires a live Firebase connection and a matching load. Untagged clothing must be linked first. Keep the app open; checks and timers stay on this device.
 
 After drying, use **START BEDROOM CHECK** in the return panel. Scan each item from the load, then tap **CONFIRM RETURN**. That restores full wear allowance in Firebase and clears the load. Confirm stays disabled while any selected item is still missing.
+
+### Gemini clothing photo suggestions
+
+Add Clothing and Edit Clothing send each newly selected photo to Gemini using
+Firebase AI Logic (the `firebase/ai` SDK already included in the Firebase dependency).
+Gemini suggests the supported clothing type, color, and **number of wears before
+washing**, from 1–30. Suggestions populate the editable manual wear-limit field so
+registration and Firebase sync preserve the proposed number. AUTO continues to use
+the app's existing type defaults. Existing saved photos are not automatically sent.
+The user can save manually if analysis fails, and pending results cannot overwrite
+user edits or another photo/form. Selecting the photo again retries analysis.
+
+One-time setup before live use:
+
+1. In Firebase Console for `lightlink-cbe74`, open Firebase AI Logic, get started,
+   and select the Gemini Developer API provider. Complete its API setup wizard.
+   Do not put a Gemini API secret in browser code.
+2. Register the web app with Firebase App Check using reCAPTCHA Enterprise. Add
+   hosting/local preview domains as appropriate. Put the public site key in
+   `server/web/gemini-config.js` (`recaptchaEnterpriseSiteKey`). AI Logic requires
+   App Check enforcement as of November 2, 2026.
+3. The default model is `gemini-3.5-flash-lite`; change `geminiConfig.model` if your
+   project's available models differ. Rebuild after changing configuration.
+4. Run `npm run prepare:web` for browser preview, or `npm run ios:sync` to include
+   the bundled SDK in the installed app. Deployment is a separate step.
+
+The native camera invokes the same analysis flow. App Check verification within
+Capacitor's local WKWebView has not been tested on a device; verify that environment
+before relying on native analysis. If the web provider cannot attest that origin,
+use a native App Check provider bridge or an authenticated backend rather than
+shipping a debug token. Camera selection and manual entry remain available.
+
+Verification: `npm run test:gemini`, `npm run check`, `npm run test:native`.
+Live requests require the console setup above and were not verified locally.
+SDK reference: https://firebase.google.com/docs/ai-logic/get-started
+
+Local browser previews automatically use App Check debug mode on localhost or
+loopback addresses. On the first photo request, register the browser-generated
+debug token from DevTools Console in Firebase App Check → Apps → Manage debug
+tokens. Each browser profile has its own token. No URL parameter is needed.
+Hosted websites and native Capacitor apps do not enable this debug mode.

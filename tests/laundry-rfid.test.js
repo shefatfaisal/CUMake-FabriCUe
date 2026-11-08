@@ -131,7 +131,7 @@ test('new connections clear local clothing and pending edits once without refres
 });
 
 
-test('laundry check ignores history, deduplicates tags, blocks missing and unexpected clothes', async () => {
+test('laundry check ignores history, deduplicates tags, blocks missing clothes and ignores extra tags', async () => {
   const a = await appBridge('Cart');
   const c = a.context;
   c.s.load = {ids: [1], stage: 'ready'};
@@ -148,9 +148,8 @@ test('laundry check ignores history, deduplicates tags, blocks missing and unexp
   c.launched = false;
   c.window.laundryRfid.update({...savedData, scans: [scan, {...scan, id: 'extra', tagId: '<UNKNOWN>'}]});
   c.launchTimer({preventDefault() {}}, 'wash');
-  assert.equal(c.launched, false);
-  assert.match(a.app.innerHTML, /UNEXPECTED \(1\)/);
-  assert.match(a.app.innerHTML, /&lt;UNKNOWN&gt;/);
+  assert.equal(c.launched, true);
+  assert.doesNotMatch(a.app.innerHTML, /UNEXPECTED|Remove a tag from range/);
   c.window.startLaundryCheck();
   assert.equal(c.s.load.rfidCheck.tags.length, 0);
   c.window.laundryRfid.update({...savedData, scans: [scan]});

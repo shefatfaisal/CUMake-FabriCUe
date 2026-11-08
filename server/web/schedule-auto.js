@@ -31,21 +31,19 @@ function autoPanelHtml(d) {
     : p.calendar
       ? (p.slotFound === false ? 'NO FREE SLOT FOUND' : (p.days === 0 ? 'LAUNDRY TODAY' : fmt(p.date)))
       : (p.days === 0 ? 'LAUNDRY TODAY' : `IN ${p.days} DAY${p.days === 1 ? '' : 'S'}`);
-  const status = connected
-    ? '<p class="sub">Connected to Google Calendar. Suggestions use your busy schedule plus wardrobe wear.</p>'
-    : '<p class="sub">Not connected. Suggestion uses how worn your clothes are. Connect Google Calendar to also pick a free day and time from your classes and plans.</p>';
+  const status = connected ? 'Google Calendar connected' : 'Wardrobe estimate';
   const actions = connected
-    ? `<div class="actions" style="margin-top:10px">
-        <button type="button" class="btn" onclick="refreshAutoSuggestion()">REFRESH FROM CALENDAR</button>
-        <button type="button" class="btn" onclick="disconnectGoogleCalendarUI()">DISCONNECT</button>
-      </div>`
-    : `<div class="actions" style="margin-top:10px">
-        <button type="button" class="btn primary" onclick="connectGoogleCalendarUI()">${configured ? 'CONNECT GOOGLE CALENDAR' : 'CONNECT GOOGLE CALENDAR (SETUP NEEDED)'}</button>
-      </div>`;
-  const percent = Number.isFinite(p.percentUsed)
-    ? `<p class="sub"><strong>${p.percentUsed}% worn</strong> · about <strong>${p.days}</strong> day${p.days === 1 ? '' : 's'} of wearable clothes left</p>`
-    : '';
-  return `<div class="sheet lime"><h3>${heading}</h3>${percent}<p>${esc(p.reason || '')}</p>${status}${actions}<p class="sub">You can still adjust the date and time before saving. Reminder stays on this device / iPhone.</p></div>`;
+    ? `<button type="button" class="auto-refresh" onclick="refreshAutoSuggestion()" aria-label="Refresh calendar suggestion">↻ Refresh</button>
+       <button type="button" class="auto-disconnect" onclick="disconnectGoogleCalendarUI()">Disconnect</button>`
+    : `<button type="button" class="btn primary" onclick="connectGoogleCalendarUI()">${configured ? 'CONNECT CALENDAR' : 'SET UP CALENDAR'}</button>`;
+  const note = emptyWardrobe ? '<p class="sub">Add everyday tops and bottoms to get a suggestion.</p>'
+    : p.slotFound === false ? '<p class="sub">Choose a date and time below.</p>' : '';
+  return `<div class="sheet lime auto-suggestion">
+    <span class="auto-eyebrow">SUGGESTED LAUNDRY</span>
+    <div class="auto-slot"><h3>${heading}</h3>${!emptyWardrobe && p.slotFound !== false ? `<span class="auto-time">${esc(d.time || p.time || '18:00')}</span>` : ''}</div>
+    <div class="auto-source"><span aria-hidden="true">${connected ? '✓' : '◷'}</span> ${status}</div>
+    ${note}<div class="auto-panel-actions">${actions}</div>
+  </div>`;
 }
 
 paintSchedule = function() {

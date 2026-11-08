@@ -32,9 +32,9 @@ test('switching an existing wardrobe to app/demo mode preserves counts and exclu
   assert.equal(closet.processedScans.old.outcome,'before-registration');
 });
 
-test('finishing a laundry check sends green only for a complete matching load', () => {
+test('finishing a laundry check sends green for all selected clothes even with extra tags', () => {
   const closet = initial();
-  for (const [tags, value] of [[[], 'd'], [['TAG-A'], 'a'], [['TAG-A', 'EXTRA'], 'd'], [['TAG-A', 'TAG-A'], 'a']]) {
+  for (const [tags, value] of [[[], 'd'], [['TAG-A'], 'a'], [['TAG-A', 'EXTRA'], 'a'], [['TAG-A', 'TAG-A'], 'a']]) {
     const next = applyAppRequest(closet, {kind: 'laundryCheck', itemIds: [1], tags}, 5000, 'check');
     assert.equal(next.output.value, value);
     assert.equal(next.output.source, 'laundryCheck');

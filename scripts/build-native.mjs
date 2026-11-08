@@ -8,7 +8,7 @@ const out=resolve(root,'native-dist');
 await mkdir(out,{recursive:true});
 const ui=await readFile(resolve(root,'smart-laundry.html'),'utf8');
 if(!ui.includes('/laundry-rfid.js'))throw Error('Missing Smart Laundry Firebase bridge.');
-const nativeHTML=ui.replaceAll('double-click title','double-tap title').replaceAll('Double-click a card','Double-tap a card').replace('width=device-width,initial-scale=1','width=device-width,initial-scale=1,viewport-fit=cover')
+const nativeHTML=ui.replace('<script src="/web-reminders.js"></script>','').replaceAll('double-click title','double-tap title').replaceAll('Double-click a card','Double-tap a card').replace('width=device-width,initial-scale=1','width=device-width,initial-scale=1,viewport-fit=cover')
  .replace('</style><body>','</style><link rel="stylesheet" href="/native.css"><body>')
  .replaceAll("document.getElementById('photo').click()",'window.smartLaundryUI.pickPhoto()')
  .replace('</body>','<script src="/native-bridge.js"></script><script type="module" src="/native-runtime.js"></script></body>');
@@ -26,13 +26,13 @@ const firebaseCDN={name:'local-firebase-sdk',setup(b){
   if(args.pluginData?.unifiedFirebaseApp)return;
   return b.resolve(args.path,{resolveDir:resolve(root,'node_modules/firebase'),kind:args.kind,pluginData:{unifiedFirebaseApp:true}});
  });
- b.onResolve({filter:/^https:\/\/www\.gstatic\.com\/firebasejs\/[^/]+\/firebase-(app|database)\.js$/},async args=>{
-  const service=args.path.match(/firebase-(app|database)\.js$/)[1];
+ b.onResolve({filter:/^https:\/\/www\.gstatic\.com\/firebasejs\/[^/]+\/firebase-(app|database|ai|app-check)\.js$/},async args=>{
+  const service=args.path.match(/firebase-(app|database|ai|app-check)\.js$/)[1];
   return b.resolve('firebase/'+service,{resolveDir:root,kind:'import-statement'});
  });
 }};
 const result=await build({entryPoints:{'laundry-firebase':resolve(root,'server/web/laundry-firebase.js'),scans:resolve(root,'server/web/scans.js'),
- 'native-runtime':resolve(root,'native/runtime.js'),'schedule-auto':resolve(root,'server/web/schedule-auto.js')},outdir:out,bundle:true,splitting:true,format:'esm',platform:'browser',
+ 'native-runtime':resolve(root,'native/runtime.js'),'schedule-auto':resolve(root,'server/web/schedule-auto.js'),'gemini-clothing':resolve(root,'server/web/gemini-clothing.js')},outdir:out,bundle:true,splitting:true,format:'esm',platform:'browser',
  target:['safari16.4'],plugins:[firebaseCDN],minify:true,metafile:true,logLevel:'warning'});
 const registries=new Set(Object.keys(result.metafile.inputs).filter(path=>path.includes('@firebase/app/dist/')).map(path=>path.split('@firebase/app/dist/')[0]));
 if(registries.size!==1)throw Error('Native bundle must contain exactly one Firebase app registry.');
